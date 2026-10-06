@@ -2,7 +2,7 @@
 
 - Raised by: Claude Code, first-session cross-check (affects T01)
 - Date: 2026-10-06
-- Status: proposed
+- Status: approved (plan re-sync pending)
 
 ## Problem
 
@@ -54,5 +54,7 @@ and decides the question once.
 
 ## Decision (Ibrahim)
 
-<approved / rejected, date, notes>. After approval: update the plan in Claude Docs, re-export it
-to docs/plan.md with the version bumped, commit `docs: sync plan vN (CR-002)`.
+Approved by Ibrahim, 2026-10-06: option 1, the list above as the dev-tooling allow-list, with
+`react/jsx-no-literals` in place of `no-literal-string`. Still to do (Ibrahim): update the plan in
+Claude Docs, re-export it to docs/plan.md with the version bumped, commit
+`docs: sync plan vN (CR-002)`.
