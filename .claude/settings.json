@@ -1,0 +1,67 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make verify)",
+      "Bash(make verify-fast)",
+      "Bash(make verify-e2e)",
+      "Bash(make verify-full)",
+      "Bash(make test *)",
+      "Bash(make dev *)",
+      "Bash(python3 scripts/ledger.py *)",
+      "Bash(python3 scripts/trace.py *)",
+      "Bash(python3 scripts/build_tokens.py *)",
+      "Bash(python3 scripts/check_contrast.py)",
+      "Bash(uv run *)",
+      "Bash(uv sync *)",
+      "Bash(npm run *)",
+      "Bash(npm ci)",
+      "Bash(npx --no-install *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git switch *)",
+      "Bash(git branch *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./infra/secrets/**)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          { "type": "command", "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/session_context.py\"", "timeout": 30 }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          { "type": "command", "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard.py\"", "timeout": 15 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/post_edit.py\"", "timeout": 120 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/stop_check.py\"", "timeout": 600 }
+        ]
+      }
+    ]
+  }
+}

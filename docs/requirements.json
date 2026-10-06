@@ -1,0 +1,546 @@
+{
+  "spec_version": 1,
+  "note": "Generated from the implementation plan. Read-only for Claude Code; change via change request.",
+  "requirements": [
+    {
+      "id": "AUTH-1",
+      "priority": "must",
+      "task": "T12",
+      "milestone": "M1"
+    },
+    {
+      "id": "AUTH-2",
+      "priority": "must",
+      "task": "T12",
+      "milestone": "M1"
+    },
+    {
+      "id": "AUTH-3",
+      "priority": "must",
+      "task": "T12",
+      "milestone": "M1"
+    },
+    {
+      "id": "AUTH-4",
+      "priority": "must",
+      "task": "T12",
+      "milestone": "M1"
+    },
+    {
+      "id": "AUTH-5",
+      "priority": "must",
+      "task": "T12",
+      "milestone": "M1"
+    },
+    {
+      "id": "AUTH-6",
+      "priority": "must",
+      "task": "T12",
+      "milestone": "M1"
+    },
+    {
+      "id": "AUTH-7",
+      "priority": "must",
+      "task": "T07",
+      "milestone": "M1"
+    },
+    {
+      "id": "AUTH-8",
+      "priority": "must",
+      "task": "T08",
+      "milestone": "M1"
+    },
+    {
+      "id": "ONB-1",
+      "priority": "must",
+      "task": "T13",
+      "milestone": "M1"
+    },
+    {
+      "id": "ONB-2",
+      "priority": "must",
+      "task": "T29",
+      "milestone": "M3"
+    },
+    {
+      "id": "ONB-3",
+      "priority": "must",
+      "task": "T14",
+      "milestone": "M1"
+    },
+    {
+      "id": "SET-1",
+      "priority": "must",
+      "task": "T17",
+      "milestone": "M1"
+    },
+    {
+      "id": "SET-2",
+      "priority": "must",
+      "task": "T17",
+      "milestone": "M1"
+    },
+    {
+      "id": "SET-3",
+      "priority": "must",
+      "task": "T32",
+      "milestone": "M3"
+    },
+    {
+      "id": "SET-4",
+      "priority": "must",
+      "task": "T29",
+      "milestone": "M3"
+    },
+    {
+      "id": "SET-5",
+      "priority": "should",
+      "task": "T46",
+      "milestone": "M5"
+    },
+    {
+      "id": "TOD-1",
+      "priority": "must",
+      "task": "T17",
+      "milestone": "M1"
+    },
+    {
+      "id": "TOD-2",
+      "priority": "must",
+      "task": "T33",
+      "milestone": "M3"
+    },
+    {
+      "id": "TOD-3",
+      "priority": "must",
+      "task": "T25",
+      "milestone": "M2"
+    },
+    {
+      "id": "TOD-4",
+      "priority": "must",
+      "task": "T40",
+      "milestone": "M4"
+    },
+    {
+      "id": "TOD-5",
+      "priority": "must",
+      "task": "T25",
+      "milestone": "M2"
+    },
+    {
+      "id": "TOD-6",
+      "priority": "must",
+      "task": "T40",
+      "milestone": "M4"
+    },
+    {
+      "id": "TOD-7",
+      "priority": "must",
+      "task": "T23",
+      "milestone": "M2"
+    },
+    {
+      "id": "TOD-8",
+      "priority": "must",
+      "task": "T49",
+      "milestone": "M5"
+    },
+    {
+      "id": "CHK-1",
+      "priority": "must",
+      "task": "T22",
+      "milestone": "M2"
+    },
+    {
+      "id": "CHK-2",
+      "priority": "must",
+      "task": "T18",
+      "milestone": "M2"
+    },
+    {
+      "id": "CHK-3",
+      "priority": "must",
+      "task": "T22",
+      "milestone": "M2"
+    },
+    {
+      "id": "CHK-4",
+      "priority": "must",
+      "task": "T22",
+      "milestone": "M2"
+    },
+    {
+      "id": "CHK-5",
+      "priority": "must",
+      "task": "T23",
+      "milestone": "M2"
+    },
+    {
+      "id": "PER-1",
+      "priority": "must",
+      "task": "T24",
+      "milestone": "M2"
+    },
+    {
+      "id": "PER-2",
+      "priority": "must",
+      "task": "T22",
+      "milestone": "M2"
+    },
+    {
+      "id": "PER-3",
+      "priority": "must",
+      "task": "T24",
+      "milestone": "M2"
+    },
+    {
+      "id": "PER-4",
+      "priority": "must",
+      "task": "T20",
+      "milestone": "M2"
+    },
+    {
+      "id": "PER-5",
+      "priority": "must",
+      "task": "T20",
+      "milestone": "M2"
+    },
+    {
+      "id": "CYC-1",
+      "priority": "must",
+      "task": "T27",
+      "milestone": "M3"
+    },
+    {
+      "id": "CYC-2",
+      "priority": "must",
+      "task": "T26",
+      "milestone": "M3"
+    },
+    {
+      "id": "CYC-3",
+      "priority": "must",
+      "task": "T28",
+      "milestone": "M3"
+    },
+    {
+      "id": "CYC-4",
+      "priority": "must",
+      "task": "T28",
+      "milestone": "M3"
+    },
+    {
+      "id": "CYC-5",
+      "priority": "must",
+      "task": "T28",
+      "milestone": "M3"
+    },
+    {
+      "id": "CYC-6",
+      "priority": "must",
+      "task": "T28",
+      "milestone": "M3"
+    },
+    {
+      "id": "CYC-7",
+      "priority": "must",
+      "task": "T27",
+      "milestone": "M3"
+    },
+    {
+      "id": "MOD-1",
+      "priority": "must",
+      "task": "T29",
+      "milestone": "M3"
+    },
+    {
+      "id": "MOD-2",
+      "priority": "must",
+      "task": "T29",
+      "milestone": "M3"
+    },
+    {
+      "id": "MOD-3",
+      "priority": "should",
+      "task": "T46",
+      "milestone": "M5"
+    },
+    {
+      "id": "MOD-4",
+      "priority": "should",
+      "task": "T46",
+      "milestone": "M5"
+    },
+    {
+      "id": "CSC-1",
+      "priority": "must",
+      "task": "T28",
+      "milestone": "M3"
+    },
+    {
+      "id": "CSC-2",
+      "priority": "must",
+      "task": "T28",
+      "milestone": "M3"
+    },
+    {
+      "id": "CSC-3",
+      "priority": "must",
+      "task": "T24",
+      "milestone": "M2"
+    },
+    {
+      "id": "CSC-4",
+      "priority": "must",
+      "task": "T28",
+      "milestone": "M3"
+    },
+    {
+      "id": "CSC-5",
+      "priority": "should",
+      "task": "T46",
+      "milestone": "M5"
+    },
+    {
+      "id": "APT-1",
+      "priority": "must",
+      "task": "T36",
+      "milestone": "M4"
+    },
+    {
+      "id": "APT-2",
+      "priority": "must",
+      "task": "T36",
+      "milestone": "M4"
+    },
+    {
+      "id": "APT-3",
+      "priority": "must",
+      "task": "T36",
+      "milestone": "M4"
+    },
+    {
+      "id": "APT-4",
+      "priority": "must",
+      "task": "T34",
+      "milestone": "M4"
+    },
+    {
+      "id": "APT-5",
+      "priority": "should",
+      "task": "T46",
+      "milestone": "M5"
+    },
+    {
+      "id": "MED-1",
+      "priority": "must",
+      "task": "T38",
+      "milestone": "M4"
+    },
+    {
+      "id": "MED-2",
+      "priority": "must",
+      "task": "T37",
+      "milestone": "M4"
+    },
+    {
+      "id": "MED-3",
+      "priority": "must",
+      "task": "T38",
+      "milestone": "M4"
+    },
+    {
+      "id": "MED-4",
+      "priority": "must",
+      "task": "T38",
+      "milestone": "M4"
+    },
+    {
+      "id": "MED-5",
+      "priority": "must",
+      "task": "T38",
+      "milestone": "M4"
+    },
+    {
+      "id": "MED-6",
+      "priority": "should",
+      "task": "T46",
+      "milestone": "M5"
+    },
+    {
+      "id": "TSK-1",
+      "priority": "must",
+      "task": "T39",
+      "milestone": "M4"
+    },
+    {
+      "id": "TSK-2",
+      "priority": "must",
+      "task": "T40",
+      "milestone": "M4"
+    },
+    {
+      "id": "NOTE-1",
+      "priority": "must",
+      "task": "T39",
+      "milestone": "M4"
+    },
+    {
+      "id": "REM-1",
+      "priority": "must",
+      "task": "T30",
+      "milestone": "M3"
+    },
+    {
+      "id": "REM-2",
+      "priority": "must",
+      "task": "T30",
+      "milestone": "M3"
+    },
+    {
+      "id": "REM-3",
+      "priority": "must",
+      "task": "T32",
+      "milestone": "M3"
+    },
+    {
+      "id": "REM-4",
+      "priority": "must",
+      "task": "T30",
+      "milestone": "M3"
+    },
+    {
+      "id": "REM-5",
+      "priority": "must",
+      "task": "T32",
+      "milestone": "M3"
+    },
+    {
+      "id": "REM-6",
+      "priority": "must",
+      "task": "T30",
+      "milestone": "M3"
+    },
+    {
+      "id": "REM-7",
+      "priority": "must",
+      "task": "T30",
+      "milestone": "M3"
+    },
+    {
+      "id": "CAL-1",
+      "priority": "must",
+      "task": "T36",
+      "milestone": "M4"
+    },
+    {
+      "id": "CAL-2",
+      "priority": "must",
+      "task": "T35",
+      "milestone": "M4"
+    },
+    {
+      "id": "INS-1",
+      "priority": "should",
+      "task": "T47",
+      "milestone": "M5"
+    },
+    {
+      "id": "INS-2",
+      "priority": "should",
+      "task": "T47",
+      "milestone": "M5"
+    },
+    {
+      "id": "INS-3",
+      "priority": "must",
+      "task": "T47",
+      "milestone": "M5"
+    },
+    {
+      "id": "DATA-1",
+      "priority": "must",
+      "task": "T41",
+      "milestone": "M4"
+    },
+    {
+      "id": "DATA-2",
+      "priority": "must",
+      "task": "T41",
+      "milestone": "M4"
+    },
+    {
+      "id": "DATA-3",
+      "priority": "must",
+      "task": "T42",
+      "milestone": "M4"
+    },
+    {
+      "id": "DATA-4",
+      "priority": "must",
+      "task": "T43",
+      "milestone": "M4"
+    },
+    {
+      "id": "ADM-1",
+      "priority": "must",
+      "task": "T44",
+      "milestone": "M4"
+    },
+    {
+      "id": "ADM-2",
+      "priority": "must",
+      "task": "T44",
+      "milestone": "M4"
+    },
+    {
+      "id": "ADM-3",
+      "priority": "must",
+      "task": "T44",
+      "milestone": "M4"
+    },
+    {
+      "id": "NFR-1",
+      "priority": "must",
+      "task": "T51",
+      "milestone": "M5"
+    },
+    {
+      "id": "NFR-2",
+      "priority": "must",
+      "task": "T49",
+      "milestone": "M5"
+    },
+    {
+      "id": "NFR-3",
+      "priority": "must",
+      "task": "T45",
+      "milestone": "M4"
+    },
+    {
+      "id": "NFR-4",
+      "priority": "must",
+      "task": "T48",
+      "milestone": "M5"
+    },
+    {
+      "id": "NFR-5",
+      "priority": "must",
+      "task": "T45",
+      "milestone": "M4"
+    },
+    {
+      "id": "NFR-6",
+      "priority": "must",
+      "task": "T16",
+      "milestone": "M1"
+    },
+    {
+      "id": "NFR-7",
+      "priority": "must",
+      "task": "T51",
+      "milestone": "M5"
+    }
+  ]
+}

@@ -1,0 +1,732 @@
+{
+  "plan_version": 1,
+  "note": "Generated from the implementation plan. Read-only for Claude Code; change via change request.",
+  "milestones": {
+    "M1": "Foundation (weeks 1–2)",
+    "M2": "Logging (weeks 3–4)",
+    "M3": "Predictions (weeks 5–6)",
+    "M4": "Feature complete (weeks 7–8)",
+    "M5": "Beta and launch (weeks 9–12)"
+  },
+  "tasks": [
+    {
+      "id": "T01",
+      "milestone": "M1",
+      "title": "Repository scaffold, tooling and verify pipeline",
+      "spec_refs": "11.1, 14.5; plan 4, 6.1",
+      "depends_on": [],
+      "owns": [],
+      "done_when": "`make verify` runs every check in plan 6.1 (empty suites pass); pre-commit installed; commitlint, gitleaks active; kit files in place"
+    },
+    {
+      "id": "T02",
+      "milestone": "M1",
+      "title": "Server skeleton: config, logging, errors, middleware",
+      "spec_refs": "6.2, 9.1, 12.5",
+      "depends_on": [
+        "T01"
+      ],
+      "owns": [],
+      "done_when": "Tests: problem+json shape, Origin and custom-header check on mutations, request ids in logs, log scrubber, `/healthz` and `/readyz`"
+    },
+    {
+      "id": "T03",
+      "milestone": "M1",
+      "title": "Database schema, roles and row-level security",
+      "spec_refs": "7.1–7.5",
+      "depends_on": [
+        "T02"
+      ],
+      "owns": [],
+      "done_when": "Migration upgrade/downgrade/upgrade clean; generated RLS test proves every user table isolates users; `lifeos_admin_ro` denied on health tables"
+    },
+    {
+      "id": "T04",
+      "milestone": "M1",
+      "title": "Encryption module and encrypted payload types",
+      "spec_refs": "12.2, 7.1",
+      "depends_on": [
+        "T03"
+      ],
+      "owns": [],
+      "done_when": "100% line coverage of `platform/crypto.py`; tamper tests (changed AAD, byte, version) fail closed; KEK re-wrap test"
+    },
+    {
+      "id": "T05",
+      "milestone": "M1",
+      "title": "Job queue, worker and outbox relay",
+      "spec_refs": "6.2, 10.1",
+      "depends_on": [
+        "T03"
+      ],
+      "owns": [],
+      "done_when": "Integration test: outbox event → relay → job runs with `app.user_id` set; periodic task registered; per-user serialisation lock"
+    },
+    {
+      "id": "T06",
+      "milestone": "M1",
+      "title": "Invites, passkey registration and sign-in, sessions, recovery codes",
+      "spec_refs": "9.2 auth, 12.3, 7.2 auth tables",
+      "depends_on": [
+        "T04"
+      ],
+      "owns": [],
+      "done_when": "API tests with a WebAuthn test authenticator: invite rules, register, sign in, cookie flags, session expiry, recovery codes single-use"
+    },
+    {
+      "id": "T07",
+      "milestone": "M1",
+      "title": "Password + TOTP fallback, rate limits, auth events",
+      "spec_refs": "4.1 AUTH-3, AUTH-7; 12.3",
+      "depends_on": [
+        "T06"
+      ],
+      "owns": [
+        "AUTH-7"
+      ],
+      "done_when": "Tests: Argon2id params, TOTP window and replay, lockout after 5 failures per account and IP, auth events written"
+    },
+    {
+      "id": "T08",
+      "milestone": "M1",
+      "title": "App-lock PIN, re-auth, session management, passkey management, recovery invite",
+      "spec_refs": "4.1 AUTH-5, AUTH-6, AUTH-8; 9.2",
+      "depends_on": [
+        "T07"
+      ],
+      "owns": [
+        "AUTH-8"
+      ],
+      "done_when": "Tests: PIN 5-try limit, recent-auth enforcement, revoke session, last-method protection, recovery invite revokes sessions and is audited"
+    },
+    {
+      "id": "T09",
+      "milestone": "M1",
+      "title": "Profile, settings, consent and per-user seeding",
+      "spec_refs": "4.2 SET-1, SET-2; 7.4; 12.6",
+      "depends_on": [
+        "T06"
+      ],
+      "owns": [],
+      "done_when": "Tests: `/me` bootstrap, settings validation, 18 symptoms seeded and encrypted, consent time and version stored"
+    },
+    {
+      "id": "T10",
+      "milestone": "M1",
+      "title": "Web scaffold: router, query client, generated API client, error boundary",
+      "spec_refs": "11.1, 11.4, 11.7",
+      "depends_on": [
+        "T01"
+      ],
+      "owns": [],
+      "done_when": "`tsc`, ESLint boundaries, Vitest pass; `size-limit` budget enforced; OpenAPI types regenerate with no diff"
+    },
+    {
+      "id": "T11",
+      "milestone": "M1",
+      "title": "Design system foundation: tokens, fonts, themes, base components",
+      "spec_refs": "5.3–5.6, 5.8; plan 5",
+      "depends_on": [
+        "T10"
+      ],
+      "owns": [],
+      "done_when": "`build_tokens.py --check` and `check_contrast.py` pass; each base component has stories in both themes, axe-clean tests, visual snapshots"
+    },
+    {
+      "id": "T12",
+      "milestone": "M1",
+      "title": "Web auth flows: register, sign-in, fallback, recovery, lock screen, sessions",
+      "spec_refs": "3 J1, J11; 5.2; 11.6",
+      "depends_on": [
+        "T08",
+        "T11"
+      ],
+      "owns": [
+        "AUTH-1",
+        "AUTH-2",
+        "AUTH-3",
+        "AUTH-4",
+        "AUTH-5",
+        "AUTH-6"
+      ],
+      "done_when": "Playwright with virtual authenticator: register, sign out, sign in, lock after timeout, unlock, revoke session"
+    },
+    {
+      "id": "T13",
+      "milestone": "M1",
+      "title": "PWA: manifest, service worker, update prompt, install guide",
+      "spec_refs": "11.2, 11.3; ONB-1",
+      "depends_on": [
+        "T11"
+      ],
+      "owns": [
+        "ONB-1"
+      ],
+      "done_when": "Lighthouse installable; offline shell loads; update toast test; install guide shown only when not standalone"
+    },
+    {
+      "id": "T14",
+      "milestone": "M1",
+      "title": "Web Push end to end: VAPID, subscriptions, test push, permission card",
+      "spec_refs": "10.4–10.6; ONB-3",
+      "depends_on": [
+        "T05",
+        "T13"
+      ],
+      "owns": [
+        "ONB-3"
+      ],
+      "done_when": "Server tests with fake push endpoint (TTL, urgency, 404/410 handling); SW push and click handlers unit-tested; test push received on Ibrahim's phone"
+    },
+    {
+      "id": "T15",
+      "milestone": "M1",
+      "title": "Infrastructure: VPS, Docker Compose, Cloudflare Pages, Pages Function proxy, Tunnel, Access, secrets",
+      "spec_refs": "14 (as amended); plan 2",
+      "depends_on": [
+        "T02",
+        "T13"
+      ],
+      "owns": [],
+      "done_when": "Staging reachable at one origin with `/api` proxied; VPS has no inbound web ports; runbook written; production domain on Cloudflare and RP ID set before the gate"
+    },
+    {
+      "id": "T16",
+      "milestone": "M1",
+      "title": "CI/CD: pipelines, staging deploy, production approval, scans, external-origin check",
+      "spec_refs": "14.5, 12.8; NFR-6",
+      "depends_on": [
+        "T15"
+      ],
+      "owns": [
+        "NFR-6"
+      ],
+      "done_when": "Pipeline green on `main`; staging auto-deploys; production needs approval; build fails if any external origin appears in the web bundle"
+    },
+    {
+      "id": "T17",
+      "milestone": "M1",
+      "title": "App shell: bottom navigation, Today greeting, profile and theme settings",
+      "spec_refs": "5.1, 5.2; TOD-1, SET-1, SET-2",
+      "depends_on": [
+        "T12"
+      ],
+      "owns": [
+        "SET-1",
+        "SET-2",
+        "TOD-1"
+      ],
+      "done_when": "Playwright: navigation reaches every tab; theme switch follows system and override; greeting by local time; en-GB date formats"
+    },
+    {
+      "id": "T18",
+      "milestone": "M2",
+      "title": "Daily logs API with validation and last-writer-wins",
+      "spec_refs": "9.2, 9.3, 9.4; CHK-2, PER-2",
+      "depends_on": [
+        "T09",
+        "T05"
+      ],
+      "owns": [
+        "CHK-2"
+      ],
+      "done_when": "Tests: upsert, future-date rejection, LWW by `client_updated_at`, idempotent replay, `daily_log.flow_changed` outbox event"
+    },
+    {
+      "id": "T19",
+      "milestone": "M2",
+      "title": "Symptom catalogue API with custom symptoms",
+      "spec_refs": "CHK-3; 9.2",
+      "depends_on": [
+        "T09"
+      ],
+      "owns": [],
+      "done_when": "Tests: create, rename, archive; archived symptoms still resolve on old logs"
+    },
+    {
+      "id": "T20",
+      "milestone": "M2",
+      "title": "Period start/end endpoints and bleed-episode logic",
+      "spec_refs": "8.1; PER-1, PER-4, PER-5",
+      "depends_on": [
+        "T18"
+      ],
+      "owns": [
+        "PER-4",
+        "PER-5"
+      ],
+      "done_when": "Pure-function tests: episodes with ≤2-day gaps, spotting never starts a period, auto-close after 3 dry days, >10-day prompt; TV6, TV9, TV10"
+    },
+    {
+      "id": "T21",
+      "milestone": "M2",
+      "title": "Calendar month endpoint",
+      "spec_refs": "9.2; CSC-3",
+      "depends_on": [
+        "T20"
+      ],
+      "owns": [],
+      "done_when": "Tests: flow, logged-day dots and placeholders for predictions per day; month boundaries in her timezone"
+    },
+    {
+      "id": "T22",
+      "milestone": "M2",
+      "title": "Check-in sheet UI: mood, energy, sleep, symptoms, flow, note, optional fields",
+      "spec_refs": "4.4; 5.2; CHK-1, CHK-3, CHK-4, PER-2",
+      "depends_on": [
+        "T18",
+        "T19",
+        "T11"
+      ],
+      "owns": [
+        "CHK-1",
+        "CHK-3",
+        "CHK-4",
+        "PER-2"
+      ],
+      "done_when": "Playwright J3 completes in one sheet; component tests for pickers; optional fields hidden until enabled; axe clean both themes"
+    },
+    {
+      "id": "T23",
+      "milestone": "M2",
+      "title": "Offline layer: IndexedDB outbox, encrypted query cache, sync engine, sync chip",
+      "spec_refs": "11.4, 11.5; CHK-5, TOD-7",
+      "depends_on": [
+        "T22"
+      ],
+      "owns": [
+        "CHK-5",
+        "TOD-7"
+      ],
+      "done_when": "Vitest with fake IndexedDB: ordering, idempotency keys, retries, rollback on 422; Playwright J9 offline check-in syncs once"
+    },
+    {
+      "id": "T24",
+      "milestone": "M2",
+      "title": "Health calendar screen, day editing and period start/end controls",
+      "spec_refs": "5.2; PER-1, PER-3, CSC-3",
+      "depends_on": [
+        "T21",
+        "T23"
+      ],
+      "owns": [
+        "CSC-3",
+        "PER-1",
+        "PER-3"
+      ],
+      "done_when": "Playwright J4: start, daily flow, end; edit a past day; calendar updates"
+    },
+    {
+      "id": "T25",
+      "milestone": "M2",
+      "title": "Today: check-in card and streak",
+      "spec_refs": "TOD-3, TOD-5; 9.3 /today",
+      "depends_on": [
+        "T22"
+      ],
+      "owns": [
+        "TOD-3",
+        "TOD-5"
+      ],
+      "done_when": "Tests: streak counting across days and timezones; completed state; Playwright Today after check-in"
+    },
+    {
+      "id": "T26",
+      "milestone": "M3",
+      "title": "Cycle engine calendar-1.0 (pure)",
+      "spec_refs": "8.1–8.4; CYC-2, CYC-3, CYC-4, CYC-6",
+      "depends_on": [
+        "T20"
+      ],
+      "owns": [
+        "CYC-2"
+      ],
+      "done_when": "TV1–TV12 pass as named tests; Hypothesis properties pass; 100% branch coverage of the engine module"
+    },
+    {
+      "id": "T27",
+      "milestone": "M3",
+      "title": "Rebuild job, predictions storage, nightly predict, health profile, exclusions, new-period confirm",
+      "spec_refs": "8.5; CYC-1, CYC-5, CYC-7, MOD-1, MOD-2",
+      "depends_on": [
+        "T26",
+        "T05"
+      ],
+      "owns": [
+        "CYC-1",
+        "CYC-7"
+      ],
+      "done_when": "Integration: log change → rebuild < 2 s → prediction superseded; exclusions and forced starts survive rebuild; postpartum suppression"
+    },
+    {
+      "id": "T28",
+      "milestone": "M3",
+      "title": "Cycle screen: ring, prediction card, states, history, exclusions",
+      "spec_refs": "5.2; 8.4; CSC-1, CSC-2, CSC-4, CYC-4, CYC-5, CYC-6",
+      "depends_on": [
+        "T27",
+        "T11"
+      ],
+      "owns": [
+        "CSC-1",
+        "CSC-2",
+        "CSC-4",
+        "CYC-3",
+        "CYC-4",
+        "CYC-5",
+        "CYC-6"
+      ],
+      "done_when": "Component tests for CycleRing aria text; every 8.4 state rendered in stories; Playwright J5 view"
+    },
+    {
+      "id": "T29",
+      "milestone": "M3",
+      "title": "Setup wizard and health mode settings",
+      "spec_refs": "3 J1; ONB-2, SET-4, MOD-1, MOD-2",
+      "depends_on": [
+        "T27"
+      ],
+      "owns": [
+        "MOD-1",
+        "MOD-2",
+        "ONB-2",
+        "SET-4"
+      ],
+      "done_when": "Playwright: wizard steps skippable and re-runnable; mode change records start date and hides predictions in postpartum"
+    },
+    {
+      "id": "T30",
+      "milestone": "M3",
+      "title": "Reminder engine: model, horizon job, dispatcher, quiet hours, DST, retries, inbox API",
+      "spec_refs": "10.1–10.3; REM-1, REM-2, REM-4, REM-6, REM-7",
+      "depends_on": [
+        "T14",
+        "T27"
+      ],
+      "owns": [
+        "REM-1",
+        "REM-2",
+        "REM-4",
+        "REM-6",
+        "REM-7"
+      ],
+      "done_when": "Time-machine tests across 2026-10-25 and 2027-03-28; dispatcher SKIP LOCKED concurrency test; crash recovery of `sending`; dedupe keys"
+    },
+    {
+      "id": "T31",
+      "milestone": "M3",
+      "title": "Check-in, period-due and late-period reminders",
+      "spec_refs": "10.2; TV11, TV12",
+      "depends_on": [
+        "T30"
+      ],
+      "owns": [],
+      "done_when": "Tests: schedules from predictions; skip rules; rescheduling without duplicates; notification copy matches spec 10.7"
+    },
+    {
+      "id": "T32",
+      "milestone": "M3",
+      "title": "Notification settings, snooze and reminder inbox UI",
+      "spec_refs": "SET-3, REM-3, REM-5",
+      "depends_on": [
+        "T30",
+        "T17"
+      ],
+      "owns": [
+        "REM-3",
+        "REM-5",
+        "SET-3"
+      ],
+      "done_when": "Playwright: change check-in time and quiet hours; snooze presets; inbox lists sent reminders"
+    },
+    {
+      "id": "T33",
+      "milestone": "M3",
+      "title": "Today cycle card and complete /today aggregate for cycle",
+      "spec_refs": "TOD-2; 9.3",
+      "depends_on": [
+        "T27",
+        "T25"
+      ],
+      "owns": [
+        "TOD-2"
+      ],
+      "done_when": "Tests: every state's copy from 8.4; Playwright Today shows the right card for seeded histories"
+    },
+    {
+      "id": "T34",
+      "milestone": "M4",
+      "title": "People: API and screens",
+      "spec_refs": "APT-4; 9.2",
+      "depends_on": [
+        "T17"
+      ],
+      "owns": [
+        "APT-4"
+      ],
+      "done_when": "API tests incl. encryption of fields; Playwright create, edit, call link"
+    },
+    {
+      "id": "T35",
+      "milestone": "M4",
+      "title": "Events API: CRUD, recurrence, occurrence edits, reminder rules, timeline",
+      "spec_refs": "APT-1, APT-2, APT-3, CAL-2; 9.2",
+      "depends_on": [
+        "T30"
+      ],
+      "owns": [
+        "CAL-2"
+      ],
+      "done_when": "Tests: RRULE expansion caps, this/future/all edits, reminders per occurrence, DST; timeline merges events, doses, tasks, flow days"
+    },
+    {
+      "id": "T36",
+      "milestone": "M4",
+      "title": "Appointment screens and Calendar (month and agenda)",
+      "spec_refs": "APT-1, APT-2, APT-3, CAL-1; 5.2",
+      "depends_on": [
+        "T35",
+        "T34"
+      ],
+      "owns": [
+        "APT-1",
+        "APT-2",
+        "APT-3",
+        "CAL-1"
+      ],
+      "done_when": "Playwright J6: create appointment with person and reminders; calendar shows it; agenda for a day"
+    },
+    {
+      "id": "T37",
+      "milestone": "M4",
+      "title": "Medications and doses API: schedules, generation, actions, missed job",
+      "spec_refs": "MED-2, MED-4, MED-5; 10.1",
+      "depends_on": [
+        "T30"
+      ],
+      "owns": [
+        "MED-2"
+      ],
+      "done_when": "Tests: dose generation 14 days ahead across DST; schedule edit regenerates only future untaken doses; missed after 6 h"
+    },
+    {
+      "id": "T38",
+      "milestone": "M4",
+      "title": "Medication screens, dose confirm, notification Taken and snooze actions",
+      "spec_refs": "MED-1, MED-3, MED-4, MED-5; 10.5",
+      "depends_on": [
+        "T37",
+        "T14"
+      ],
+      "owns": [
+        "MED-1",
+        "MED-3",
+        "MED-4",
+        "MED-5"
+      ],
+      "done_when": "Playwright J7; SW notificationclick test posts with idempotency key; iOS fallback to confirm screen"
+    },
+    {
+      "id": "T39",
+      "milestone": "M4",
+      "title": "Tasks and notes: API and screens",
+      "spec_refs": "TSK-1, NOTE-1",
+      "depends_on": [
+        "T30",
+        "T17"
+      ],
+      "owns": [
+        "NOTE-1",
+        "TSK-1"
+      ],
+      "done_when": "API and Playwright tests; note bodies encrypted; task reminders created and cancelled on completion"
+    },
+    {
+      "id": "T40",
+      "milestone": "M4",
+      "title": "Today list and quick-add sheet",
+      "spec_refs": "TOD-4, TOD-6, TSK-2",
+      "depends_on": [
+        "T36",
+        "T38",
+        "T39"
+      ],
+      "owns": [
+        "TOD-4",
+        "TOD-6",
+        "TSK-2"
+      ],
+      "done_when": "Playwright: items sorted by time, untimed last, overdue in Earlier; every quick-add action works"
+    },
+    {
+      "id": "T41",
+      "milestone": "M4",
+      "title": "Flo and CSV import with preview and undo",
+      "spec_refs": "13.1, 13.2; DATA-1, DATA-2",
+      "depends_on": [
+        "T27"
+      ],
+      "owns": [
+        "DATA-1",
+        "DATA-2"
+      ],
+      "done_when": "Fixture-based mapper tests from her anonymised export; preview counts; conflicts untouched; undo removes only unedited imported rows"
+    },
+    {
+      "id": "T42",
+      "milestone": "M4",
+      "title": "Data export",
+      "spec_refs": "13.3; DATA-3",
+      "depends_on": [
+        "T41"
+      ],
+      "owns": [
+        "DATA-3"
+      ],
+      "done_when": "Test: ZIP contains every file in 13.3 with decrypted contents; expires after first download or 24 h; recent auth required"
+    },
+    {
+      "id": "T43",
+      "milestone": "M4",
+      "title": "Account deletion, grace period and purge",
+      "spec_refs": "13.4; DATA-4",
+      "depends_on": [
+        "T42"
+      ],
+      "owns": [
+        "DATA-4"
+      ],
+      "done_when": "Test: purge removes every row of the user across all tables; cancel during grace; `pending_deletions` honoured after a restore"
+    },
+    {
+      "id": "T44",
+      "milestone": "M4",
+      "title": "Admin console",
+      "spec_refs": "ADM-1, ADM-2, ADM-3; AUTH-8 UI",
+      "depends_on": [
+        "T43"
+      ],
+      "owns": [
+        "ADM-1",
+        "ADM-2",
+        "ADM-3"
+      ],
+      "done_when": "Tests: admin role cannot reach any health endpoint or table; invites and session revocation audited; status page fields"
+    },
+    {
+      "id": "T45",
+      "milestone": "M4",
+      "title": "Backups, restore drill, alerts and operations status",
+      "spec_refs": "14.6, 14.8; NFR-3, NFR-5",
+      "depends_on": [
+        "T16"
+      ],
+      "owns": [
+        "NFR-3",
+        "NFR-5"
+      ],
+      "done_when": "Restore drill on staging under 4 h with a decrypted record; alerts reach ntfy and email when API is stopped and backup skipped"
+    },
+    {
+      "id": "T46",
+      "milestone": "M5",
+      "title": "Should items: discreet notifications, TTC and avoid modes, averages, .ics, as-needed doses",
+      "spec_refs": "SET-5, MOD-3, MOD-4, CSC-5, APT-5, MED-6",
+      "depends_on": [
+        "T40"
+      ],
+      "owns": [
+        "APT-5",
+        "CSC-5",
+        "MED-6",
+        "MOD-3",
+        "MOD-4",
+        "SET-5"
+      ],
+      "done_when": "Each item has tagged tests; avoid-pregnancy banner text matches spec 12.7"
+    },
+    {
+      "id": "T47",
+      "milestone": "M5",
+      "title": "Insights",
+      "spec_refs": "INS-1, INS-2, INS-3",
+      "depends_on": [
+        "T27"
+      ],
+      "owns": [
+        "INS-1",
+        "INS-2",
+        "INS-3"
+      ],
+      "done_when": "Tests: thresholds (≥5 occurrences, ≥2 cycles); copy has no medical interpretation"
+    },
+    {
+      "id": "T48",
+      "milestone": "M5",
+      "title": "Accessibility pass",
+      "spec_refs": "5.8; NFR-4",
+      "depends_on": [
+        "T46",
+        "T47"
+      ],
+      "owns": [
+        "NFR-4"
+      ],
+      "done_when": "axe zero serious/critical on every screen in both themes; VoiceOver walkthrough of J3 and J4 recorded in the task file"
+    },
+    {
+      "id": "T49",
+      "milestone": "M5",
+      "title": "Performance pass",
+      "spec_refs": "NFR-2, TOD-8",
+      "depends_on": [
+        "T46",
+        "T47"
+      ],
+      "owns": [
+        "NFR-2",
+        "TOD-8"
+      ],
+      "done_when": "Lighthouse mobile ≥ 85; JS ≤ 250 KB gzipped; API p95 < 300 ms on staging load script"
+    },
+    {
+      "id": "T50",
+      "milestone": "M5",
+      "title": "Security pass",
+      "spec_refs": "12; NFR-6",
+      "depends_on": [
+        "T46",
+        "T47"
+      ],
+      "owns": [],
+      "done_when": "ZAP baseline no high findings; headers and CSP verified on staging; dependency and image scans clean; threat model re-reviewed"
+    },
+    {
+      "id": "T51",
+      "milestone": "M5",
+      "title": "Device matrix and beta support",
+      "spec_refs": "15.2, 15.4; NFR-1, NFR-7",
+      "depends_on": [
+        "T48",
+        "T49",
+        "T50"
+      ],
+      "owns": [
+        "NFR-1",
+        "NFR-7"
+      ],
+      "done_when": "Spec 15.2 matrix completed on her iPhone and desktop; beta issues triaged within 48 h"
+    },
+    {
+      "id": "T52",
+      "milestone": "M5",
+      "title": "Launch: final Flo import, readiness review, acceptance checklist",
+      "spec_refs": "17; 13",
+      "depends_on": [
+        "T51"
+      ],
+      "owns": [],
+      "done_when": "Every spec 17 box ticked with evidence; `trace.py --gate M5` clean; Zee confirms"
+    }
+  ]
+}
