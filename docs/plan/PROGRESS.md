@@ -10,21 +10,21 @@ Spec version: 1 · Plan version: 1
 
 | ID | Task | Owns requirements | Depends on | Status | Commit | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| T01 | Repository scaffold, tooling and verify pipeline | — | — | todo | | |
+| T01 | Repository scaffold, tooling and verify pipeline | — | — | blocked |  | blocked: CR-002: tooling dependencies required by plan 6.1 |
 | T02 | Server skeleton: config, logging, errors, middleware | — | T01 | todo | | |
-| T03 | Database schema, roles and row-level security | — | T02 | todo | | |
+| T03 | Database schema, roles and row-level security | — | T02 | blocked |  | blocked: CR-003: RLS pre-auth lookups, cross-user jobs, roles |
 | T04 | Encryption module and encrypted payload types | — | T03 | todo | | |
 | T05 | Job queue, worker and outbox relay | — | T03 | todo | | |
 | T06 | Invites, passkey registration and sign-in, sessions, recovery codes | — | T04 | todo | | |
 | T07 | Password + TOTP fallback, rate limits, auth events | AUTH-7 | T06 | todo | | |
 | T08 | App-lock PIN, re-auth, session management, passkey management, recovery invite | AUTH-8 | T07 | todo | | |
-| T09 | Profile, settings, consent and per-user seeding | — | T06 | todo | | |
+| T09 | Profile, settings, consent and per-user seeding | — | T06 | blocked |  | blocked: CR-004: optimistic concurrency version vs updated_at |
 | T10 | Web scaffold: router, query client, generated API client, error boundary | — | T01 | todo | | |
-| T11 | Design system foundation: tokens, fonts, themes, base components | — | T10 | todo | | |
+| T11 | Design system foundation: tokens, fonts, themes, base components | — | T10 | blocked |  | blocked: CR-005: tokens.css location and typography tokens |
 | T12 | Web auth flows: register, sign-in, fallback, recovery, lock screen, sessions | AUTH-1, AUTH-2, AUTH-3, AUTH-4, AUTH-5, AUTH-6 | T08, T11 | todo | | |
 | T13 | PWA: manifest, service worker, update prompt, install guide | ONB-1 | T11 | todo | | |
 | T14 | Web Push end to end: VAPID, subscriptions, test push, permission card | ONB-3 | T05, T13 | todo | | |
-| T15 | Infrastructure: VPS, Docker Compose, Cloudflare Pages, Pages Function proxy, Tunnel, Access, secrets | — | T02, T13 | todo | | |
+| T15 | Infrastructure: VPS, Docker Compose, Cloudflare Pages, Pages Function proxy, Tunnel, Access, secrets | — | T02, T13 | blocked |  | blocked: CR-006: stale Caddy and infra layout in spec |
 | T16 | CI/CD: pipelines, staging deploy, production approval, scans, external-origin check | NFR-6 | T15 | todo | | |
 | T17 | App shell: bottom navigation, Today greeting, profile and theme settings | SET-1, SET-2, TOD-1 | T12 | todo | | |
 | GATE-M1 | Milestone gate review (plan section 8) | — | all M1 tasks | todo | | |
@@ -51,8 +51,8 @@ Spec version: 1 · Plan version: 1
 | T27 | Rebuild job, predictions storage, nightly predict, health profile, exclusions, new-period confirm | CYC-1, CYC-7 | T26, T05 | todo | | |
 | T28 | Cycle screen: ring, prediction card, states, history, exclusions | CSC-1, CSC-2, CSC-4, CYC-3, CYC-4, CYC-5, CYC-6 | T27, T11 | todo | | |
 | T29 | Setup wizard and health mode settings | MOD-1, MOD-2, ONB-2, SET-4 | T27 | todo | | |
-| T30 | Reminder engine: model, horizon job, dispatcher, quiet hours, DST, retries, inbox API | REM-1, REM-2, REM-4, REM-6, REM-7 | T14, T27 | todo | | |
-| T31 | Check-in, period-due and late-period reminders | — | T30 | todo | | |
+| T30 | Reminder engine: model, horizon job, dispatcher, quiet hours, DST, retries, inbox API | REM-1, REM-2, REM-4, REM-6, REM-7 | T14, T27 | blocked |  | blocked: CR-007: truncated 9.2 cells (event scope, snooze presets) |
+| T31 | Check-in, period-due and late-period reminders | — | T30 | blocked |  | blocked: CR-008: late-period timing and cycle copy |
 | T32 | Notification settings, snooze and reminder inbox UI | REM-3, REM-5, SET-3 | T30, T17 | todo | | |
 | T33 | Today cycle card and complete /today aggregate for cycle | TOD-2 | T27, T25 | todo | | |
 | GATE-M3 | Milestone gate review (plan section 8) | — | all M3 tasks | todo | | |
@@ -68,7 +68,7 @@ Spec version: 1 · Plan version: 1
 | T38 | Medication screens, dose confirm, notification Taken and snooze actions | MED-1, MED-3, MED-4, MED-5 | T37, T14 | todo | | |
 | T39 | Tasks and notes: API and screens | NOTE-1, TSK-1 | T30, T17 | todo | | |
 | T40 | Today list and quick-add sheet | TOD-4, TOD-6, TSK-2 | T36, T38, T39 | todo | | |
-| T41 | Flo and CSV import with preview and undo | DATA-1, DATA-2 | T27 | todo | | |
+| T41 | Flo and CSV import with preview and undo | DATA-1, DATA-2 | T27 | blocked |  | blocked: CR-009: CSV template columns |
 | T42 | Data export | DATA-3 | T41 | todo | | |
 | T43 | Account deletion, grace period and purge | DATA-4 | T42 | todo | | |
 | T44 | Admin console | ADM-1, ADM-2, ADM-3 | T43 | todo | | |
