@@ -2,7 +2,7 @@
 
 - Raised by: Claude Code, first-session cross-check (affects T41)
 - Date: 2026-10-06
-- Status: proposed
+- Status: approved (spec re-sync pending)
 
 ## Problem
 
@@ -32,5 +32,6 @@ Option 1: 13.2 is the detailed definition and matches the check-in fields.
 
 ## Decision (Ibrahim)
 
-<approved / rejected, date, notes>. After approval: update the spec in Claude Docs, re-export it
-to docs/spec.md with the version bumped, commit `docs: sync spec vN (CR-009)`.
+Approved by Ibrahim, 2026-10-07: option 1 (seven CSV columns as in 13.2; DATA-2 updated). He decided to proceed before re-exporting the spec ("proceed now"): until then this CR is the governing text for the sections it changes.
+
+Still to do (Ibrahim): update the spec in Claude Docs, re-export it with the version bumped, commit `docs: sync spec vN (CR-009)`.

@@ -2,7 +2,7 @@
 
 - Raised by: Claude Code, first-session cross-check (affects T31, T33)
 - Date: 2026-10-06
-- Status: proposed
+- Status: approved (spec re-sync pending)
 
 ## Problem
 
@@ -37,5 +37,6 @@ and 8.4 is the more specific source.
 
 ## Decision (Ibrahim)
 
-<approved / rejected, date, notes>. After approval: update the spec in Claude Docs, re-export it
-to docs/spec.md with the version bumped, commit `docs: sync spec vN (CR-008)`.
+Approved by Ibrahim, 2026-10-07: option 1 (late note 3 days after `range_high`; 10.7 and 8.4 copy; J5 and TOD-2 updated). He decided to proceed before re-exporting the spec ("proceed now"): until then this CR is the governing text for the sections it changes.
+
+Still to do (Ibrahim): update the spec in Claude Docs, re-export it with the version bumped, commit `docs: sync spec vN (CR-008)`.

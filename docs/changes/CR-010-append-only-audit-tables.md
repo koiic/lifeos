@@ -2,7 +2,7 @@
 
 - Raised by: Claude Code during T03 (security review finding)
 - Date: 2026-10-07
-- Status: proposed
+- Status: approved (spec re-sync pending)
 
 ## Problem
 
@@ -44,5 +44,6 @@ moved to the job role that already finds work across users.
 
 ## Decision (Ibrahim)
 
-<approved / rejected, date, notes>. After approval: update the spec in Claude Docs, re-export it
-to docs/spec.md with the version bumped, commit `docs: sync spec vN (CR-010)`.
+Approved by Ibrahim, 2026-10-07: option 1 (`audit_log` and `auth_events` append-only for `lifeos_app`; retention deletes by `lifeos_jobs`). He decided to proceed before re-exporting the spec ("proceed now"): until then this CR is the governing text for the sections it changes.
+
+Still to do (Ibrahim): update the spec in Claude Docs, re-export it with the version bumped, commit `docs: sync spec vN (CR-010)`.

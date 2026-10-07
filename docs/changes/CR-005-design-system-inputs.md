@@ -2,7 +2,7 @@
 
 - Raised by: Claude Code, first-session cross-check (affects T11)
 - Date: 2026-10-06
-- Status: proposed
+- Status: approved (spec re-sync pending)
 
 ## Problem
 
@@ -42,6 +42,22 @@ generates and guards them in `src/ui/`; only the spec's layout line needs to fol
 
 ## Decision (Ibrahim)
 
-<approved / rejected, date, notes>. After approval: update the spec in Claude Docs, re-export it
-to docs/spec.md with the version bumped, update design/tokens.json, commit
-`docs: sync spec vN (CR-005)`.
+Approved by Ibrahim, 2026-10-07: option 1 (generated token files stay in `web/src/ui/`; add the typography tokens). He decided to proceed before re-exporting the spec ("proceed now"): until then this CR is the governing text for the sections it changes.
+
+To do by Ibrahim before T11 (the guard blocks Claude Code from `design/tokens.json`): add to
+`design/tokens.json`, then run `python3 scripts/build_tokens.py`:
+
+```json
+"shared": {
+  "font-weight": { "body": "400", "body-strong": "500", "label": "700" },
+  "size": { "focus-offset": "2px" }
+},
+"themes": {
+  "light": { "font-variation": { "display": "normal" } },
+  "dark":  { "font-variation": { "display": "\"SOFT\" 100" } }
+}
+```
+
+(merged into the existing objects, keeping every current value).
+
+Still to do (Ibrahim): update the spec in Claude Docs, re-export it with the version bumped, commit `docs: sync spec vN (CR-005)`.
