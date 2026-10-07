@@ -43,3 +43,20 @@ def test_mutations_declare_csrf_and_size_problems(app: FastAPI) -> None:
         declared = responses(app, "/api/v1/client-errors", "post")[status]
         assert declared["content"] == {"application/problem+json": {"schema": PROBLEM_REF}}
     assert "403" not in responses(app, "/api/v1/healthz", "get")
+
+
+def test_every_error_response_in_the_contract_is_problem_json(app: FastAPI) -> None:
+    """T06: errors declared by description only (e.g. auth 401/403/409) are problem+json too."""
+    problem = {"application/problem+json": {"schema": PROBLEM_REF}}
+    for path, operations in app.openapi()["paths"].items():
+        for method, operation in operations.items():
+            for status, response in operation["responses"].items():
+                if status[0] in "45":
+                    assert response.get("content") == problem, (path, method, status)
+
+
+def test_a_route_403_keeps_the_csrf_reason(app: FastAPI) -> None:
+    forbidden = responses(app, "/api/v1/auth/register/options", "post")["403"]
+    assert forbidden["description"] == (
+        "The invite is not valid. Or: Missing X-LifeOS-Client header or wrong Origin."
+    )

@@ -2,7 +2,7 @@
 
 - Raised by: Claude Code during T06 (spec and security reviewers, both)
 - Date: 2026-10-07
-- Status: proposed
+- Status: approved (spec re-sync pending)
 
 ## Problem
 
@@ -49,4 +49,7 @@ nothing outside the auth endpoints needs to know about recovery. Same shape as A
 
 ## Decision (Ibrahim)
 
-Pending.
+Approved by Ibrahim, 2026-10-07: option 1 (no session until the new passkey is verified). Until the
+spec is re-synced this CR is the governing text for the 9.2 rows it changes.
+
+Still to do (Ibrahim): update spec 9.2, re-export, commit `docs: sync spec vN (CR-013)`.

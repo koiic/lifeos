@@ -4,11 +4,14 @@
   AAD = `table:column:row_id:user_id`; format `0x01 ‖ nonce(12) ‖ ciphertext ‖ tag(16)`.
 - DEKs: 32 random bytes, stored only wrapped by the master key (KEK) with AAD = `dek:<user_id>`, in
   the same format; the KEK version lives in `users.kek_version`.
-- KEK rotation: a `Keyring` holds every live KEK version; new wraps use the highest.
+- KEK rotation: a `Keyring` holds every live KEK version; new wraps use the highest. It is loaded
+  from the `lifeos_kek` secret: one `<version> <base64 key>` line per version (CR-011).
 - Every failure raises `DecryptionError("decryption failed")` with no cause and no context, so
   callers cannot tell why and no plaintext or key reaches logs. Keys never print or pickle.
 """
 
+import base64
+import binascii
 import re
 import secrets
 import time
@@ -20,6 +23,7 @@ from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from pydantic import ValidationError
 
+from app.platform.config import ConfigError, Settings
 from app.platform.payloads import Payload
 
 FORMAT_VERSION = 0x01
@@ -147,6 +151,54 @@ class Keyring:
 
     def __repr__(self) -> str:
         return f"<Keyring versions={sorted(self._keys)}>"
+
+
+# CR-011 rule 3. Stricter than `^\d+ [A-Za-z0-9+/=]+$`: padding only at the end.
+KEYRING_LINE = re.compile(r"(?P<version>\d+) (?P<key>[A-Za-z0-9+/]+={0,2})")
+# ENV=local only, without a lifeos_kek file: a fixed key, so local data survives restarts.
+LOCAL_DEV_KEY = bytes(KEY_BYTES)
+
+
+class KeyringError(ConfigError):
+    """The lifeos_kek file is invalid. The message never contains the file's content."""
+
+
+def parse_keyring(text: str) -> Keyring:
+    """Parse a lifeos_kek file; any error raises KeyringError naming only the line number."""
+    keys: dict[int, MasterKey] = {}
+    for number, line in enumerate(text.split("\n"), start=1):
+        if not line:
+            continue
+        match = KEYRING_LINE.fullmatch(line)
+        try:
+            if match is None or len(match["key"]) % 4:
+                raise ValueError
+            version = int(match["version"])
+            raw = base64.b64decode(match["key"], validate=True)
+        except (ValueError, binascii.Error):
+            raise KeyringError(f"lifeos_kek line {number} is invalid") from None
+        if version < 1 or len(raw) != KEY_BYTES:
+            raise KeyringError(f"lifeos_kek line {number} is invalid") from None
+        if version in keys:
+            raise KeyringError(f"lifeos_kek line {number} repeats a version") from None
+        keys[version] = MasterKey(raw)
+    if not keys:
+        raise KeyringError("lifeos_kek holds no keys") from None
+    return Keyring(keys)
+
+
+def load_keyring(settings: Settings) -> Keyring:
+    """The keyring for this process; raises ConfigError (stopping start-up) when unusable."""
+    if settings.lifeos_kek is None:
+        if settings.env != "local":
+            raise ConfigError("secret file lifeos_kek is required outside local")
+        return Keyring({1: MasterKey(LOCAL_DEV_KEY)})
+    keyring = parse_keyring(settings.lifeos_kek.get_secret_value())
+    if settings.env != "local" and any(
+        secrets.compare_digest(key._raw, LOCAL_DEV_KEY) for key in keyring._keys.values()
+    ):
+        raise ConfigError("lifeos_kek must not contain the local development key")
+    return keyring
 
 
 def _dek_aad(user_id: uuid.UUID) -> bytes:

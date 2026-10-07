@@ -9,7 +9,8 @@ import pytest
 from sqlalchemy import text
 
 from app.platform import outbox
-from app.platform.jobs import Runtime, user_transaction
+from app.platform.db import user_transaction
+from app.platform.jobs import Runtime
 from app.platform.logging import configure_logging
 from tests.jobs.conftest import JobEnv, create_user, jobs_named, write_event
 

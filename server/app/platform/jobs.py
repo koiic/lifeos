@@ -6,19 +6,16 @@
   `search_path = jobs, public` (its tables live in schema `jobs`).
 - `defer_for_user`: queue a job for one user, serialised per user (lock `user:<id>`) and never
   queued twice while waiting (queueing lock `<task>:<id>`).
-- `user_transaction`: a `lifeos_app` transaction with `app.user_id` set, which every job opens
-  before touching user tables (spec 7.3).
+- Jobs use `app.platform.db.user_transaction`: a `lifeos_app` transaction with `app.user_id` set,
+  which every job opens before touching user tables (spec 7.3).
 """
 
 import uuid
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
 import procrastinate
 from procrastinate.exceptions import AlreadyEnqueued
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.platform.config import ConfigError, Settings
 from app.platform.db import APP_ROLE, JOBS_ROLE, create_engine
@@ -88,15 +85,3 @@ async def prune_finished_jobs(app: procrastinate.App) -> None:
         include_cancelled=True,
         include_aborted=True,
     )
-
-
-@asynccontextmanager
-async def user_transaction(
-    engine: AsyncEngine, user_id: uuid.UUID
-) -> AsyncIterator[AsyncConnection]:
-    """A transaction as `lifeos_app` with `app.user_id` set (RLS limits it to that user)."""
-    async with engine.begin() as conn:
-        await conn.execute(
-            text("SELECT set_config('app.user_id', :user_id, true)"), {"user_id": str(user_id)}
-        )
-        yield conn

@@ -115,12 +115,19 @@ def install_problem_openapi(app: FastAPI) -> None:
             components.pop(unused, None)
         for operations in schema.get("paths", {}).values():
             for method, operation in operations.items():
+                responses = operation.setdefault("responses", {})
                 if method in MUTATING_METHODS:
                     for status, description in MUTATION_PROBLEMS.items():
-                        operation["responses"].setdefault(
-                            status, {"description": description, "content": PROBLEM_CONTENT}
-                        )
-                for status, response in operation.get("responses", {}).items():
+                        if status in responses:
+                            # A route's own reason for this status, plus the middleware's.
+                            declared = responses[status]["description"]
+                            responses[status]["description"] = f"{declared} Or: {description}"
+                        else:
+                            responses[status] = {"description": description}
+                for status, response in responses.items():
+                    # Errors a route declares without a model are problem+json too.
+                    if status.startswith(("4", "5")) and "content" not in response:
+                        response["content"] = PROBLEM_CONTENT
                     json_schema = response.get("content", {}).get("application/json", {})
                     ref = json_schema.get("schema", {}).get("$ref", "")
                     if ref.endswith(("/Problem", "/HTTPValidationError")):

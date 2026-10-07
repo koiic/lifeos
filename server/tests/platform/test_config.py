@@ -150,3 +150,44 @@ def test_jobs_url_is_optional_for_the_api(env: str, tmp_path: Path) -> None:
     (tmp_path / "database_url").write_text("postgresql://app:pw@postgres/lifeos")
     settings = load_settings({"ENV": env, "APP_ORIGIN": "https://a.example"}, tmp_path)
     assert settings.database_jobs_url is None
+
+
+# ---------- T06: WebAuthn relying party and master key (12.2, 12.3, 14.3, CR-011) ----------
+
+
+def test_rp_id_defaults_to_the_app_origin_host(tmp_path: Path) -> None:
+    assert load_settings(LOCAL, tmp_path).webauthn_rp_id == "localhost"
+    settings = load_settings(LOCAL | {"APP_ORIGIN": "https://app.example.com"}, tmp_path)
+    assert settings.webauthn_rp_id == "app.example.com"
+
+
+@pytest.mark.parametrize("rp_id", ["app.example.com", "example.com"])
+def test_rp_id_may_be_the_origin_host_or_a_parent_domain(rp_id: str, tmp_path: Path) -> None:
+    environ = LOCAL | {"APP_ORIGIN": "https://app.example.com", "WEBAUTHN_RP_ID": rp_id}
+    assert load_settings(environ, tmp_path).webauthn_rp_id == rp_id
+
+
+@pytest.mark.parametrize(
+    "rp_id", ["evil.com", "pp.example.com", "other.example.com", "https://app.example.com", "com."]
+)
+def test_rp_id_must_cover_the_app_origin(rp_id: str, tmp_path: Path) -> None:
+    environ = LOCAL | {"APP_ORIGIN": "https://app.example.com", "WEBAUTHN_RP_ID": rp_id}
+    with pytest.raises(ConfigError, match="WEBAUTHN_RP_ID"):
+        load_settings(environ, tmp_path)
+
+
+@pytest.mark.parametrize("env", DEPLOYED)
+def test_the_master_key_comes_from_its_secret_file(env: str, tmp_path: Path) -> None:
+    (tmp_path / "database_url").write_text("postgresql://app:pw@postgres/lifeos")
+    (tmp_path / "lifeos_kek").write_text("1 " + "A" * 43 + "=\n")
+    settings = load_settings({"ENV": env, "APP_ORIGIN": "https://a.example"}, tmp_path)
+    assert settings.lifeos_kek is not None
+    assert settings.lifeos_kek.get_secret_value() == "1 " + "A" * 43 + "="
+    assert "AAAA" not in repr(settings)
+
+
+@pytest.mark.parametrize("env", DEPLOYED)
+def test_deployed_envs_ignore_a_master_key_in_the_environment(env: str, tmp_path: Path) -> None:
+    (tmp_path / "database_url").write_text("postgresql://app:pw@postgres/lifeos")
+    environ = {"ENV": env, "APP_ORIGIN": "https://a.example", "LIFEOS_KEK": "1 " + "A" * 43 + "="}
+    assert load_settings(environ, tmp_path).lifeos_kek is None

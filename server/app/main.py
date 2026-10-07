@@ -5,8 +5,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.auth import api as auth_api
+from app.auth.service import AuthService
 from app.platform import client_errors, probes
 from app.platform.config import Settings, load_settings
+from app.platform.crypto import load_keyring
 from app.platform.db import APP_ROLE, create_engine, verify_role
 from app.platform.errors import install_error_handlers, install_problem_openapi
 from app.platform.logging import configure_logging
@@ -19,11 +22,17 @@ from app.platform.middleware import (
 
 
 def create_app(settings: Settings) -> FastAPI:
+    # Loaded here, not in the lifespan: a bad master-key file stops the process at import.
+    keyring = load_keyring(settings)
+
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.engine = create_engine(settings.database_url.get_secret_value())
         if settings.env != "local":
             await verify_role(app.state.engine, APP_ROLE)
+        app.state.auth = AuthService(
+            app.state.engine, keyring, settings.webauthn_rp_id, settings.app_origin
+        )
         yield
         await app.state.engine.dispose()
 
@@ -53,6 +62,7 @@ def create_app(settings: Settings) -> FastAPI:
     app.add_middleware(RequestContextMiddleware)
     app.include_router(probes.router)
     app.include_router(client_errors.router)
+    app.include_router(auth_api.router)
     return app
 
 

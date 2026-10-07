@@ -10,6 +10,7 @@ import asyncpg
 import pytest
 
 from tests.jobs.conftest import JobEnv
+from tests.kek import TEST_KEK
 
 pytestmark = pytest.mark.integration
 
@@ -197,6 +198,11 @@ async def test_outside_local_the_api_refuses_a_login_that_is_not_lifeos_app(migr
     from app.main import create_app
     from app.platform.config import ConfigError, Settings
 
-    settings = Settings(env="production", app_origin="https://a.example", database_url=migrated)
+    settings = Settings(
+        env="production",
+        app_origin="https://a.example",
+        database_url=migrated,
+        lifeos_kek=TEST_KEK,
+    )
     with pytest.raises(ConfigError, match="lifeos_app"), TestClient(create_app(settings)):
         pass

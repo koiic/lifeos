@@ -8,9 +8,10 @@ import os
 import re
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Literal, cast, get_args
+from typing import Any, Literal, cast, get_args
+from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, SecretStr
+from pydantic import BaseModel, ConfigDict, SecretStr, model_validator
 
 Env = Literal["local", "staging", "production"]
 
@@ -19,6 +20,7 @@ LOCAL_APP_ORIGIN = "http://localhost:5173"
 # Matches infra/docker-compose.dev.yml; only ever used when ENV=local.
 LOCAL_DATABASE_URL = "postgresql://lifeos:lifeos@127.0.0.1:54320/lifeos"
 ORIGIN = re.compile(r"(?P<scheme>https?)://[A-Za-z0-9.-]+(:\d+)?")
+HOSTNAME = re.compile(r"[a-z0-9-]+(\.[a-z0-9-]+)*")
 
 
 class ConfigError(ValueError):
@@ -35,6 +37,29 @@ class Settings(BaseModel):
     database_owner_url: SecretStr | None = None
     # lifeos_jobs connection for the worker (CR-003, 14.3); the API does not need it.
     database_jobs_url: SecretStr | None = None
+    # WebAuthn relying party ID (12.3): the app's domain; defaults to APP_ORIGIN's host.
+    webauthn_rp_id: str
+    # Master key file content (12.2, CR-011); None only in ENV=local (fixed development key).
+    lifeos_kek: SecretStr | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _default_rp_id(cls, data: Any) -> Any:
+        if isinstance(data, dict) and not data.get("webauthn_rp_id") and data.get("app_origin"):
+            data = data | {"webauthn_rp_id": origin_host(str(data["app_origin"]))}
+        return data
+
+
+def origin_host(origin: str) -> str:
+    return (urlsplit(origin).hostname or "").lower()
+
+
+def rp_id_covers(rp_id: str, origin: str) -> bool:
+    """WebAuthn: the RP ID is the origin's host or a parent domain of it (never a bare TLD)."""
+    host = origin_host(origin)
+    if HOSTNAME.fullmatch(rp_id) is None:
+        return False
+    return rp_id == host or ("." in rp_id and host.endswith("." + rp_id))
 
 
 def read_secret(name: str, secrets_dir: Path) -> str | None:
@@ -76,10 +101,18 @@ def load_settings(
     if jobs_url is None and local:
         jobs_url = environ.get("DATABASE_JOBS_URL", database_url)
 
+    rp_id = environ.get("WEBAUTHN_RP_ID") or origin_host(app_origin)
+    if not rp_id_covers(rp_id, app_origin):
+        raise ConfigError("WEBAUTHN_RP_ID must be the APP_ORIGIN host or a parent domain of it")
+
+    kek = read_secret("lifeos_kek", secrets_dir)
+
     return Settings(
         env=cast(Env, env),
         app_origin=app_origin,
         database_url=SecretStr(database_url),
         database_owner_url=SecretStr(owner_url) if owner_url else None,
         database_jobs_url=SecretStr(jobs_url) if jobs_url else None,
+        webauthn_rp_id=rp_id,
+        lifeos_kek=SecretStr(kek) if kek else None,
     )

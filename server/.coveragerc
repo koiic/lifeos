@@ -3,6 +3,8 @@
 [run]
 source = app
 branch = true
+# SQLAlchemy async runs awaits in greenlets; without this, lines after them look unrun.
+concurrency = greenlet, thread
 
 [report]
 fail_under = 75
