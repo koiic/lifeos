@@ -10,7 +10,7 @@ Spec version: 1 · Plan version: 1
 
 | ID | Task | Owns requirements | Depends on | Status | Commit | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| T01 | Repository scaffold, tooling and verify pipeline | — | — | in_progress |  | blocked: CR-002: tooling dependencies required by plan 6.1 |
+| T01 | Repository scaffold, tooling and verify pipeline | — | — | done | e9edd37 | make verify green (exit 0, Postgres 16 via Docker): 124 server tests, coverage 100% + per-module gates, migrations up/down/up clean, api-contract, tokens 30/30, trace 0 errors, gitleaks history+tree clean; pre-commit (ruff, prettier, eslint, gitleaks, commitlint) installed and proven; 4 reviewers CHANGES REQUIRED -> all findings fixed or answered (T01.md) |
 | T02 | Server skeleton: config, logging, errors, middleware | — | T01 | todo | | |
 | T03 | Database schema, roles and row-level security | — | T02 | blocked |  | blocked: CR-003: RLS pre-auth lookups, cross-user jobs, roles |
 | T04 | Encryption module and encrypted payload types | — | T03 | todo | | |
