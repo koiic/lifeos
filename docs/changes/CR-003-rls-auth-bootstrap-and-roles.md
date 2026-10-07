@@ -95,6 +95,12 @@ Details the implementation and its reviews showed the spec text must carry:
   only `user_settings(user_id, quiet_start, quiet_end, notif_prefs, discreet_notifications,
   checkin_time)` (never the app-lock PIN hash) and updates `reminders(status, attempts, sent_at,
   fire_at)` (not `updated_at`, which the trigger maintains).
+- **7.3 job tables (from T05):** `lifeos_jobs` has full use of schema `jobs` (Procrastinate:
+  fetch, run, retry, prune); `lifeos_app` may only queue jobs (EXECUTE on
+  `procrastinate_defer_jobs_v1`, INSERT on the job and event tables); `lifeos_admin_ro` reads only
+  the aggregate view `jobs.queue_stats` (status, count, oldest deferred time), not the job tables,
+  because task names, locks and arguments identify a user and when she logged. Finished jobs are
+  deleted after 7 days.
 - **7.1 `updated_at`:** the trigger sets `clock_timestamp()`, so two updates in one transaction get
   different versions (relevant to CR-004's ETag option).
 

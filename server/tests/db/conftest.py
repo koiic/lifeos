@@ -4,47 +4,13 @@ Tests connect as the database superuser and switch role with `SET LOCAL ROLE`; R
 to the current role, exactly as they do for the app's login roles.
 """
 
-import os
-import subprocess
-import sys
 import uuid
 from collections.abc import AsyncIterator
-from pathlib import Path
 
 import asyncpg
 import pytest
 
-SERVER = Path(__file__).resolve().parents[2]
-APPLY_ROLES = SERVER / "migrations" / "apply_roles.py"
-
 pytestmark = pytest.mark.integration
-
-
-def plain_dsn(database_url: str) -> str:
-    return database_url.replace("+asyncpg", "")
-
-
-@pytest.fixture(scope="session")
-def migrated(database_url: str) -> str:
-    """Apply roles.sql and `alembic upgrade head` once per session (in a subprocess: env.py runs
-    its own event loop)."""
-    run = subprocess.run(
-        [sys.executable, str(APPLY_ROLES), plain_dsn(database_url)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert run.returncode == 0, run.stderr
-    upgrade = subprocess.run(
-        [sys.executable, "-m", "alembic", "upgrade", "head"],
-        cwd=SERVER,
-        env={**os.environ, "ENV": "local", "DATABASE_URL": database_url},
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert upgrade.returncode == 0, upgrade.stderr
-    return plain_dsn(database_url)
 
 
 @pytest.fixture

@@ -38,8 +38,9 @@ def test_interactive_docs_are_disabled(client: TestClient, path: str) -> None:
 def test_openapi_document_is_served_only_locally(client: TestClient, database_url: str) -> None:
     assert client.get("/api/v1/openapi.json").status_code == 200
     settings = Settings(env="production", app_origin=ORIGIN, database_url=database_url)
-    with TestClient(create_app(settings), base_url=ORIGIN) as prod:
-        assert prod.get("/api/v1/openapi.json").status_code == 404
+    # Routing only: no lifespan (a production start-up requires a real lifeos_app login, T05).
+    prod = TestClient(create_app(settings), base_url=ORIGIN)
+    assert prod.get("/api/v1/openapi.json").status_code == 404
 
 
 @pytest.mark.parametrize(

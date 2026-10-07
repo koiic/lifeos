@@ -8,6 +8,7 @@ dependencies = [
     "asyncpg==0.32.0",
     "cryptography==50.0.2",
     "fastapi==0.142.2",
+    "procrastinate==3.10.0",
     "pydantic==2.13.5",
     "sqlalchemy[asyncio]==2.0.54",
     "structlog==26.1.0",
@@ -39,6 +40,9 @@ known-first-party = ["app"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101"]
+# These run the repository's own tools, Alembic or the worker entrypoint in subprocesses.
+"tests/conftest.py" = ["S101", "S603"]
+"tests/jobs/test_registration.py" = ["S101", "S603"]
 # Tooling tests run the repository's own pinned CLIs (commitlint, stylelint, hook scripts).
 "tests/tooling/**" = ["S101", "S603"]
 # DB tests bootstrap roles and run Alembic in a subprocess (env.py owns its event loop).
@@ -90,7 +94,28 @@ allow_indirect_imports = "true"
 [[tool.importlinter.contracts]]
 name = "Only repo.py files use SQLAlchemy in modules"
 type = "forbidden"
-source_modules = ["app.*.api", "app.*.service", "app.*.jobs"]
+# The six business modules only (platform code is exempt; `app.*.jobs` would match
+# app.platform.jobs).
+source_modules = [
+    "app.auth.api",
+    "app.auth.service",
+    "app.auth.jobs",
+    "app.core.api",
+    "app.core.service",
+    "app.core.jobs",
+    "app.health.api",
+    "app.health.service",
+    "app.health.jobs",
+    "app.notify.api",
+    "app.notify.service",
+    "app.notify.jobs",
+    "app.data.api",
+    "app.data.service",
+    "app.data.jobs",
+    "app.admin.api",
+    "app.admin.service",
+    "app.admin.jobs",
+]
 forbidden_modules = ["sqlalchemy"]
 allow_indirect_imports = "true"
 

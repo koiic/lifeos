@@ -7,7 +7,7 @@ from fastapi import FastAPI
 
 from app.platform import client_errors, probes
 from app.platform.config import Settings, load_settings
-from app.platform.db import create_engine
+from app.platform.db import APP_ROLE, create_engine, verify_role
 from app.platform.errors import install_error_handlers, install_problem_openapi
 from app.platform.logging import configure_logging
 from app.platform.middleware import (
@@ -22,6 +22,8 @@ def create_app(settings: Settings) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.engine = create_engine(settings.database_url.get_secret_value())
+        if settings.env != "local":
+            await verify_role(app.state.engine, APP_ROLE)
         yield
         await app.state.engine.dispose()
 

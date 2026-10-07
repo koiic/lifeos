@@ -33,6 +33,8 @@ class Settings(BaseModel):
     database_url: SecretStr
     # lifeos_owner connection for migrations (CR-003, 14.3); only the migrate container has it.
     database_owner_url: SecretStr | None = None
+    # lifeos_jobs connection for the worker (CR-003, 14.3); the API does not need it.
+    database_jobs_url: SecretStr | None = None
 
 
 def read_secret(name: str, secrets_dir: Path) -> str | None:
@@ -70,10 +72,14 @@ def load_settings(
     owner_url = read_secret("database_owner_url", secrets_dir)
     if owner_url is None and local:
         owner_url = environ.get("DATABASE_OWNER_URL", database_url)
+    jobs_url = read_secret("database_jobs_url", secrets_dir)
+    if jobs_url is None and local:
+        jobs_url = environ.get("DATABASE_JOBS_URL", database_url)
 
     return Settings(
         env=cast(Env, env),
         app_origin=app_origin,
         database_url=SecretStr(database_url),
         database_owner_url=SecretStr(owner_url) if owner_url else None,
+        database_jobs_url=SecretStr(jobs_url) if jobs_url else None,
     )
