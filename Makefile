@@ -1,12 +1,13 @@
 # Life OS — verification contract (plan section 6.1).
 # The target NAMES and what they check are fixed by the plan. T01 makes every recipe work;
 # later tasks may add steps to a recipe but never remove one or weaken a threshold.
-# Scripts referenced here are created by the tasks that own them: check_migrations.sh (T03),
-# check_openapi.sh (T02/T10), check_external_origins.sh and scan_images.sh (T16),
-# zap_baseline.sh (T50), npm "lighthouse" script (T13).
+# check_migrations.sh, check_openapi.sh, check_coverage.py and ensure_db.sh are created in T01 and
+# extended by later tasks. Created by the tasks that own them: check_external_origins.sh and
+# scan_images.sh (T16), zap_baseline.sh (T50), npm "lighthouse" script (T13), npm "test:e2e"
+# script (first task with Playwright tests, T12).
 
 .PHONY: verify verify-fast verify-e2e verify-full fmt-check lint types arch test-server test-web \
-        migrations api-contract tokens trace secrets dev bootstrap
+        migrations api-contract tokens trace secrets dev bootstrap db
 
 verify: fmt-check lint types arch test-server test-web migrations api-contract tokens trace secrets
 	@echo "verify: all checks passed"
@@ -42,13 +43,14 @@ types:
 arch:
 	cd server && uv run lint-imports
 
-test-server:
-	cd server && uv run pytest -q --cov=app --cov-config=.coveragerc
+test-server: db
+	cd server && uv run pytest -q --cov=app --cov-config=.coveragerc --cov-report=term --cov-report=json
+	python3 scripts/check_coverage.py server/coverage.json
 
 test-web:
 	cd web && npm run test:unit -- --run --coverage
 
-migrations:
+migrations: db
 	./scripts/check_migrations.sh
 
 api-contract:
@@ -62,7 +64,11 @@ trace:
 	python3 scripts/trace.py
 
 secrets:
-	gitleaks detect --no-banner --redact
+	gitleaks git --no-banner --redact
+	gitleaks dir --no-banner --redact .
+
+db:
+	./scripts/ensure_db.sh
 
 bootstrap:
 	cd server && uv sync

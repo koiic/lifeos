@@ -10,7 +10,7 @@ Spec version: 1 · Plan version: 1
 
 | ID | Task | Owns requirements | Depends on | Status | Commit | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| T01 | Repository scaffold, tooling and verify pipeline | — | — | blocked |  | blocked: CR-002: tooling dependencies required by plan 6.1 |
+| T01 | Repository scaffold, tooling and verify pipeline | — | — | in_progress |  | blocked: CR-002: tooling dependencies required by plan 6.1 |
 | T02 | Server skeleton: config, logging, errors, middleware | — | T01 | todo | | |
 | T03 | Database schema, roles and row-level security | — | T02 | blocked |  | blocked: CR-003: RLS pre-auth lookups, cross-user jobs, roles |
 | T04 | Encryption module and encrypted payload types | — | T03 | todo | | |

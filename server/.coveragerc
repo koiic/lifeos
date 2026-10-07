@@ -1,0 +1,13 @@
+# Coverage settings for `make test-server` (plan 4.7). Overall >= 75% here; the per-module
+# thresholds (health, notify, platform/crypto >= 90%) are checked by scripts/check_coverage.py.
+[run]
+source = app
+branch = true
+
+[report]
+fail_under = 75
+show_missing = true
+skip_empty = true
+
+[json]
+output = coverage.json

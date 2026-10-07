@@ -1,0 +1,35 @@
+# Secrets and real data never enter the repository (plan 4.1, spec 13.1)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+secrets/
+infra/secrets/
+# Zee's real Flo export lives outside the repository; only the anonymised fixture
+# server/tests/fixtures/flo_sample.json is committed (spec 13.1).
+*[Ff]lo*[Ee]xport*
+/data/
+/private/
+# Database dumps and backups
+*.dump
+*.sql.gz
+*.age
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.coverage
+coverage.json
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Web
+node_modules/
+web/coverage/
+web/dist/
+
+# Claude Code hook state
+.claude/state/

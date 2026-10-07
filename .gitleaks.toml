@@ -1,0 +1,26 @@
+# gitleaks (plan 4.1, 6.1): default rules. `make secrets` scans git history and the working tree;
+# the pre-commit hook scans staged changes.
+title = "Life OS"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Third-party code, caches and build output (not ours to scan)"
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)\.venv/''',
+  '''(^|/)\.(mypy|pytest|ruff)_cache/''',
+  '''(^|/)__pycache__/''',
+  '''^web/coverage/''',
+  '''^web/dist/''',
+  '''^\.git/''',
+]
+
+[[allowlists]]
+description = "Gitignored local secret files: they hold real secrets by design and never enter git"
+paths = [
+  '''(^|/)\.env(\..*)?$''',
+  '''(^|/)secrets/''',
+  '''\.(pem|key|p12)$''',
+]

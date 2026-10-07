@@ -1,0 +1,38 @@
+# pre-commit hooks (plan 4.1): ruff format, ruff, prettier, eslint --fix on staged files, gitleaks;
+# commitlint on the message. All run the project's own pinned tools. Install: pre-commit install
+default_install_hook_types: [pre-commit, commit-msg]
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --project server ruff format
+        language: system
+        types: [python]
+        files: ^server/
+      - id: ruff
+        name: ruff check --fix
+        entry: uv run --project server ruff check --fix
+        language: system
+        types: [python]
+        files: ^server/
+      - id: prettier
+        name: prettier --write
+        entry: scripts/precommit/web.sh prettier --write --ignore-unknown
+        language: system
+        files: ^web/
+      - id: eslint
+        name: eslint --fix
+        entry: scripts/precommit/web.sh eslint --fix --max-warnings 0 --no-warn-ignored
+        language: system
+        files: ^web/.*\.(ts|tsx|js)$
+      - id: gitleaks
+        name: gitleaks (staged)
+        entry: gitleaks git --pre-commit --staged --redact --no-banner
+        language: system
+        pass_filenames: false
+      - id: commitlint
+        name: commitlint
+        entry: scripts/precommit/commitlint.sh
+        language: system
+        stages: [commit-msg]
