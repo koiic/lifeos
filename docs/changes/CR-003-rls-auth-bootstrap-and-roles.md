@@ -2,7 +2,7 @@
 
 - Raised by: Claude Code, first-session cross-check (affects T03, T05, T06, T30, T44)
 - Date: 2026-10-06
-- Status: proposed
+- Status: approved (spec re-sync pending)
 
 ## Problem
 
@@ -67,5 +67,45 @@ role 10.3 already describes.
 
 ## Decision (Ibrahim)
 
-<approved / rejected, date, notes>. After approval: update the spec in Claude Docs, re-export it
-to docs/spec.md with the version bumped, commit `docs: sync spec vN (CR-003)`.
+Approved by Ibrahim, 2026-10-07: option 1 (narrow, explicit bypasses). Still to do (Ibrahim):
+update the spec in Claude Docs (draft text below), re-export it to docs/spec.md with the version
+bumped, commit `docs: sync spec vN (CR-003)`. T03 stays blocked until then.
+
+## Appendix: draft spec text (for the Claude Docs update)
+
+Drafted by Claude Code from option 1; edit freely. Section numbers refer to spec version 1.
+
+**7.1, replace the row-level security bullet with:**
+
+> - Row-level security, enabled and forced, on every user-owned table: every table with a `user_id`
+>   column, with `USING (user_id = current_setting('app.user_id', true)::uuid)`, and `users` itself
+>   with `USING (id = current_setting('app.user_id', true)::uuid)`. The app runs
+>   `SET LOCAL app.user_id` per transaction; when it is not set, the policies match no rows.
+> - System tables without RLS, reached only through the `auth` and `admin` services: `invites`,
+>   `auth_challenges`, `auth_events`, `audit_log`, `pending_deletions`. They hold no health data.
+> - Sign-in looks up rows before the user is known through three `SECURITY DEFINER` functions owned
+>   by `lifeos_owner`, executable only by `lifeos_app`, each returning only what authentication
+>   needs: `auth_find_credential(credential_id)` (user id, public key, sign count),
+>   `auth_find_session(token_hash)` (session id, user id, expiry, revoked flag) and
+>   `auth_find_user_by_email(email)` (user id). After the lookup the app sets `app.user_id` and
+>   reads everything else under RLS.
+
+**7.3, add these rows to the roles table and amend `lifeos_admin_ro`:**
+
+> | `lifeos_jobs` | Role-specific policies `USING (true)` (no `BYPASSRLS`) granting: SELECT and `UPDATE (processed_at)` on `outbox_events`; SELECT on `users(id, timezone)`, `reminders(id, user_id, status, fire_at)`, `medication_doses(id, user_id, status, scheduled_at)`, `pending_deletions`. Finds work across users; the work itself runs as `lifeos_app` with `app.user_id` set | Worker (relay, horizon, nightly predict, missed doses, purge) |
+> | `lifeos_dispatcher` | Role-specific policies `USING (true)` on, and only on: `reminders`, `push_subscriptions`, `user_settings`, `users(id, timezone, dek_wrapped)` (10.3) | Reminder dispatcher |
+>
+> `lifeos_admin_ro`: add "through role-specific policies `USING (true)` on the tables listed".
+
+**10.3, last sentence, replace "a dedicated database role whose RLS policy permits it" with:**
+
+> the `lifeos_dispatcher` role (7.3), whose role-specific RLS policies permit it
+
+**14.3, add rows to the configuration table:**
+
+> | `DATABASE_OWNER_URL` | secret | `lifeos_owner` connection; `migrate` container only |
+> | `DATABASE_JOBS_URL` | secret | `lifeos_jobs` connection; worker |
+> | `DATABASE_DISPATCHER_URL` | secret | `lifeos_dispatcher` connection; worker |
+
+(As files: `database_owner_url`, `database_jobs_url`, `database_dispatcher_url` in `/run/secrets`,
+matching T02's `database_url`.)
