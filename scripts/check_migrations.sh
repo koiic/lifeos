@@ -2,6 +2,9 @@
 # Migration check (plan 4.5, 6.1): upgrade -> downgrade -> upgrade must run clean.
 set -euo pipefail
 
+# Developer and CI tooling runs as a local deployment unless told otherwise (spec 14.3).
+export ENV="${ENV:-local}"
+
 cd "$(dirname "$0")/../server"
 uv run alembic upgrade head
 uv run alembic downgrade base

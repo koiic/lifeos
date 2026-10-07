@@ -3,6 +3,9 @@
 # types match the code. Run with --write to regenerate both after an API change.
 set -euo pipefail
 
+# Developer and CI tooling runs as a local deployment unless told otherwise (spec 14.3).
+export ENV="${ENV:-local}"
+
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 SPEC=server/openapi.json
 TYPES=web/src/lib/api/schema.d.ts

@@ -1,7 +1,6 @@
 """Alembic environment (async, asyncpg). Table metadata is attached from T03."""
 
 import asyncio
-import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -9,19 +8,23 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from app.platform.config import load_settings
+from app.platform.db import async_url
+
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = None
 
-# Local default matches infra/docker-compose.dev.yml; deployments set DATABASE_URL.
-LOCAL_DATABASE_URL = "postgresql://lifeos:lifeos@127.0.0.1:54320/lifeos"
-
 
 def database_url() -> str:
-    url = os.environ.get("DATABASE_URL", LOCAL_DATABASE_URL)
-    return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    """Same settings as the app (spec 14.3): secret file outside local, defaults only in local.
+
+    Known gap against spec 7.3 (migrations run as `lifeos_owner`): there is no owner connection in
+    14.3 yet, so this uses `database_url` until CR-003 item 5 is decided (T03).
+    """
+    return async_url(load_settings().database_url.get_secret_value())
 
 
 def run_migrations_offline() -> None:

@@ -77,5 +77,5 @@ bootstrap:
 
 dev:
 	docker compose -f infra/docker-compose.dev.yml up -d postgres
-	cd server && uv run alembic upgrade head
-	@echo "run: (cd server && uv run fastapi dev app/main.py) and (cd web && npm run dev)"
+	cd server && ENV=local uv run alembic upgrade head
+	@echo "run: (cd server && ENV=local uv run uvicorn app.main:app --reload) and (cd web && npm run dev)"
