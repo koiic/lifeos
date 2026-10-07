@@ -94,3 +94,36 @@ def test_settings_never_print_secrets(tmp_path: Path) -> None:
     settings = load_settings({"ENV": "production", "APP_ORIGIN": "https://a.example"}, tmp_path)
     for text in (repr(settings), str(settings), str(settings.model_dump())):
         assert "s3cret" not in text
+
+
+def test_owner_url_defaults_to_the_database_url_locally(tmp_path: Path) -> None:
+    settings = load_settings(LOCAL | {"DATABASE_URL": "postgresql://u:p@db/x"}, tmp_path)
+    assert settings.database_owner_url is not None
+    assert settings.database_owner_url.get_secret_value() == "postgresql://u:p@db/x"
+
+
+@pytest.mark.parametrize("env", DEPLOYED)
+def test_owner_url_comes_from_its_secret_file_when_present(env: str, tmp_path: Path) -> None:
+    (tmp_path / "database_url").write_text("postgresql://app:pw@postgres/lifeos")
+    (tmp_path / "database_owner_url").write_text("postgresql://owner:s3cret@postgres/lifeos")
+    settings = load_settings({"ENV": env, "APP_ORIGIN": "https://a.example"}, tmp_path)
+    assert settings.database_owner_url is not None
+    assert settings.database_owner_url.get_secret_value().startswith("postgresql://owner:")
+    assert "s3cret" not in repr(settings)
+
+
+@pytest.mark.parametrize("env", DEPLOYED)
+def test_owner_url_is_optional_for_the_api(env: str, tmp_path: Path) -> None:
+    (tmp_path / "database_url").write_text("postgresql://app:pw@postgres/lifeos")
+    settings = load_settings({"ENV": env, "APP_ORIGIN": "https://a.example"}, tmp_path)
+    assert settings.database_owner_url is None
+
+
+def test_local_owner_url_can_be_set_in_the_environment(tmp_path: Path) -> None:
+    environ = LOCAL | {
+        "DATABASE_URL": "postgresql://app:p@db/x",
+        "DATABASE_OWNER_URL": "postgresql://owner:p@db/x",
+    }
+    settings = load_settings(environ, tmp_path)
+    assert settings.database_owner_url is not None
+    assert settings.database_owner_url.get_secret_value() == "postgresql://owner:p@db/x"

@@ -40,6 +40,10 @@ known-first-party = ["app"]
 "tests/**" = ["S101"]
 # Tooling tests run the repository's own pinned CLIs (commitlint, stylelint, hook scripts).
 "tests/tooling/**" = ["S101", "S603"]
+# DB tests bootstrap roles and run Alembic in a subprocess (env.py owns its event loop).
+"tests/db/**" = ["S101", "S603"]
+# Migrations carry the spec's DDL verbatim (spec 7.2, 7.5), long lines included.
+"migrations/versions/**" = ["E501"]
 
 # ---------- mypy (plan 4.2) ----------
 [tool.mypy]

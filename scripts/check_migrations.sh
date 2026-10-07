@@ -6,6 +6,8 @@ set -euo pipefail
 export ENV="${ENV:-local}"
 
 cd "$(dirname "$0")/../server"
+# Roles are cluster-wide and created outside migrations (T03 Decisions).
+uv run python migrations/apply_roles.py
 uv run alembic upgrade head
 uv run alembic downgrade base
 uv run alembic upgrade head

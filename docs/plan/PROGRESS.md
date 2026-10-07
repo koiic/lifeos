@@ -12,11 +12,11 @@ Spec version: 1 · Plan version: 1
 | --- | --- | --- | --- | --- | --- | --- |
 | T01 | Repository scaffold, tooling and verify pipeline | — | — | done | e9edd37 | make verify green (exit 0, Postgres 16 via Docker): 124 server tests, coverage 100% + per-module gates, migrations up/down/up clean, api-contract, tokens 30/30, trace 0 errors, gitleaks history+tree clean; pre-commit (ruff, prettier, eslint, gitleaks, commitlint) installed and proven; 4 reviewers CHANGES REQUIRED -> all findings fixed or answered (T01.md) |
 | T02 | Server skeleton: config, logging, errors, middleware | — | T01 | done | d0e224f | make verify green (exit 0, Postgres 16): 245 server tests (121 new), coverage 100%, migrations clean, api-contract regenerated (problem+json), trace 0 errors, gitleaks clean; reviewers: design PASS, spec/security/test CHANGES REQUIRED -> all findings fixed or answered (T02.md); migrations-role gap recorded pending CR-003 |
-| T03 | Database schema, roles and row-level security | — | T02 | blocked |  | blocked: CR-003: RLS pre-auth lookups, cross-user jobs, roles |
+| T03 | Database schema, roles and row-level security | — | T02 | in_progress |  | blocked: CR-003: RLS pre-auth lookups, cross-user jobs, roles |
 | T04 | Encryption module and encrypted payload types | — | T03 | todo | | |
 | T05 | Job queue, worker and outbox relay | — | T03 | todo | | |
 | T06 | Invites, passkey registration and sign-in, sessions, recovery codes | — | T04 | todo | | |
-| T07 | Password + TOTP fallback, rate limits, auth events | AUTH-7 | T06 | todo | | |
+| T07 | Password + TOTP fallback, rate limits, auth events | AUTH-7 | T06 | blocked |  | blocked: CR-010: append-only audit tables (decide before first auth_events writer) |
 | T08 | App-lock PIN, re-auth, session management, passkey management, recovery invite | AUTH-8 | T07 | todo | | |
 | T09 | Profile, settings, consent and per-user seeding | — | T06 | blocked |  | blocked: CR-004: optimistic concurrency version vs updated_at |
 | T10 | Web scaffold: router, query client, generated API client, error boundary | — | T01 | done | d655afd | make verify green (exit 0, Postgres 16): 322 server tests (78 new), web 31 tests (lib/api 100% lines), initial JS 73.4 kB/250 kB, ESLint boundaries tested at any depth, api-contract regenerated, trace 0 errors, gitleaks clean; 4 reviewers CHANGES REQUIRED -> all findings fixed or answered (T10.md); T07 follow-up: key client-error limit on client IP |

@@ -8,3 +8,4 @@ if [[ -n "${DATABASE_URL:-}" ]]; then
   exit 0
 fi
 docker compose -f "$(dirname "$0")/../infra/docker-compose.dev.yml" up -d --wait postgres
+(cd "$(dirname "$0")/../server" && uv run python migrations/apply_roles.py)

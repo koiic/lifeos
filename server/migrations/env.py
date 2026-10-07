@@ -8,7 +8,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.platform.config import load_settings
+from app.platform.config import ConfigError, load_settings
 from app.platform.db import async_url
 
 config = context.config
@@ -19,12 +19,12 @@ target_metadata = None
 
 
 def database_url() -> str:
-    """Same settings as the app (spec 14.3): secret file outside local, defaults only in local.
-
-    Known gap against spec 7.3 (migrations run as `lifeos_owner`): there is no owner connection in
-    14.3 yet, so this uses `database_url` until CR-003 item 5 is decided (T03).
-    """
-    return async_url(load_settings().database_url.get_secret_value())
+    """Migrations run as lifeos_owner (spec 7.3, CR-003): the `database_owner_url` secret file
+    outside local; locally DATABASE_OWNER_URL or the local database URL."""
+    owner_url = load_settings().database_owner_url
+    if owner_url is None:
+        raise ConfigError("secret file database_owner_url is required to run migrations")
+    return async_url(owner_url.get_secret_value())
 
 
 def run_migrations_offline() -> None:
@@ -34,6 +34,12 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
+    # Every object (alembic_version included) is created and owned by lifeos_owner (spec 7.3,
+    # CR-003), also when connected as a superuser locally or in CI.
+    connection.exec_driver_sql("SET ROLE lifeos_owner")
+    # SET ROLE is session-level; commit the implicit transaction it opened so Alembic manages
+    # (and commits) its own migration transaction instead of treating it as the caller's.
+    connection.commit()
     context.configure(connection=connection, target_metadata=target_metadata)
     with context.begin_transaction():
         context.run_migrations()

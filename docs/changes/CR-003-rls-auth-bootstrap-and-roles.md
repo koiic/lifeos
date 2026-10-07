@@ -69,7 +69,34 @@ role 10.3 already describes.
 
 Approved by Ibrahim, 2026-10-07: option 1 (narrow, explicit bypasses). Still to do (Ibrahim):
 update the spec in Claude Docs (draft text below), re-export it to docs/spec.md with the version
-bumped, commit `docs: sync spec vN (CR-003)`. T03 stays blocked until then.
+bumped, commit `docs: sync spec vN (CR-003)`.
+
+2026-10-07: Ibrahim decided to proceed with T03 before the spec sync ("proceed now, resume T03");
+T03 implements this appendix plus the addendum below.
+
+## Addendum from T03 (please include in the spec sync)
+
+Details the implementation and its reviews showed the spec text must carry:
+
+- **7.1 policy expression:** `NULLIF(current_setting('app.user_id', true), '')::uuid` instead of
+  `current_setting('app.user_id', true)::uuid`. After `RESET`/`set_config(…, '')` the setting is an
+  empty string, and `''::uuid` raises an error; NULLIF makes "when it is not set, the policies match
+  no rows" true in every case.
+- **7.3 `lifeos_owner`:** has `BYPASSRLS` (FORCE ROW LEVEL SECURITY applies to table owners, so
+  the SECURITY DEFINER lookups need it), is not a superuser, and holds only CREATE on the database
+  (the trusted `citext` extension) and USAGE/CREATE on schema `public`. Migrations always run as
+  `lifeos_owner` (`SET ROLE` when connected as a superuser), so it owns every object. Only the
+  `migrate` container gets its credentials.
+- **7.3 roles are created outside migrations** (cluster-wide): `server/migrations/roles.sql`, run
+  once by the database superuser; staging/production add logins and passwords (T15). CREATE on
+  schema `public` is revoked from PUBLIC; each role gets USAGE explicitly.
+- **7.3 narrower grants than "SELECT on sessions, invites" and "user_settings":**
+  `lifeos_admin_ro` reads `sessions` and `invites` without `token_hash`; `lifeos_dispatcher` reads
+  only `user_settings(user_id, quiet_start, quiet_end, notif_prefs, discreet_notifications,
+  checkin_time)` (never the app-lock PIN hash) and updates `reminders(status, attempts, sent_at,
+  fire_at)` (not `updated_at`, which the trigger maintains).
+- **7.1 `updated_at`:** the trigger sets `clock_timestamp()`, so two updates in one transaction get
+  different versions (relevant to CR-004's ETag option).
 
 ## Appendix: draft spec text (for the Claude Docs update)
 

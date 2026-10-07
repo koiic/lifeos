@@ -31,6 +31,8 @@ class Settings(BaseModel):
     env: Env
     app_origin: str
     database_url: SecretStr
+    # lifeos_owner connection for migrations (CR-003, 14.3); only the migrate container has it.
+    database_owner_url: SecretStr | None = None
 
 
 def read_secret(name: str, secrets_dir: Path) -> str | None:
@@ -65,4 +67,13 @@ def load_settings(
     if database_url is None:
         raise ConfigError(f"secret file {secrets_dir / 'database_url'} is required outside local")
 
-    return Settings(env=cast(Env, env), app_origin=app_origin, database_url=SecretStr(database_url))
+    owner_url = read_secret("database_owner_url", secrets_dir)
+    if owner_url is None and local:
+        owner_url = environ.get("DATABASE_OWNER_URL", database_url)
+
+    return Settings(
+        env=cast(Env, env),
+        app_origin=app_origin,
+        database_url=SecretStr(database_url),
+        database_owner_url=SecretStr(owner_url) if owner_url else None,
+    )
