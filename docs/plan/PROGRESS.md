@@ -12,7 +12,7 @@ Spec version: 1 · Plan version: 1
 | --- | --- | --- | --- | --- | --- | --- |
 | T01 | Repository scaffold, tooling and verify pipeline | — | — | done | e9edd37 | make verify green (exit 0, Postgres 16 via Docker): 124 server tests, coverage 100% + per-module gates, migrations up/down/up clean, api-contract, tokens 30/30, trace 0 errors, gitleaks history+tree clean; pre-commit (ruff, prettier, eslint, gitleaks, commitlint) installed and proven; 4 reviewers CHANGES REQUIRED -> all findings fixed or answered (T01.md) |
 | T02 | Server skeleton: config, logging, errors, middleware | — | T01 | done | d0e224f | make verify green (exit 0, Postgres 16): 245 server tests (121 new), coverage 100%, migrations clean, api-contract regenerated (problem+json), trace 0 errors, gitleaks clean; reviewers: design PASS, spec/security/test CHANGES REQUIRED -> all findings fixed or answered (T02.md); migrations-role gap recorded pending CR-003 |
-| T03 | Database schema, roles and row-level security | — | T02 | in_progress |  | blocked: CR-003: RLS pre-auth lookups, cross-user jobs, roles |
+| T03 | Database schema, roles and row-level security | — | T02 | done | e0e9e75 | make verify green (exit 0, Postgres 16): 582 server tests incl. 254 catalog-driven DB tests (RLS on 23 tables, exact grants and policies, owner-owned SECURITY DEFINER lookups), migrations up/down/up clean as lifeos_owner, mutation check caught; 3 reviewers CHANGES REQUIRED -> fixed or answered; CR-003 addendum, CR-010 raised (blocks T07) |
 | T04 | Encryption module and encrypted payload types | — | T03 | todo | | |
 | T05 | Job queue, worker and outbox relay | — | T03 | todo | | |
 | T06 | Invites, passkey registration and sign-in, sessions, recovery codes | — | T04 | todo | | |
