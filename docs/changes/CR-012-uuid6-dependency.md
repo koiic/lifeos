@@ -2,7 +2,7 @@
 
 - Raised by: Claude Code during T06
 - Date: 2026-10-07
-- Status: proposed
+- Status: approved (spec re-sync pending)
 
 ## Problem
 
@@ -34,4 +34,7 @@ code calls one function, `app.platform.ids.new_id()`, so switching later is a on
 
 ## Decision (Ibrahim)
 
-Pending.
+Approved by Ibrahim, 2026-10-07: option 1 (add `uuid6`, pinned). Until the spec is re-synced this CR is
+the governing text for spec 6.1.
+
+Still to do (Ibrahim): add `uuid6` to spec 6.1, re-export, commit `docs: sync spec vN (CR-012)`.
