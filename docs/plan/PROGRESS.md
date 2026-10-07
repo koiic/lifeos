@@ -19,7 +19,7 @@ Spec version: 1 · Plan version: 1
 | T07 | Password + TOTP fallback, rate limits, auth events | AUTH-7 | T06 | todo | | |
 | T08 | App-lock PIN, re-auth, session management, passkey management, recovery invite | AUTH-8 | T07 | todo | | |
 | T09 | Profile, settings, consent and per-user seeding | — | T06 | blocked |  | blocked: CR-004: optimistic concurrency version vs updated_at |
-| T10 | Web scaffold: router, query client, generated API client, error boundary | — | T01 | todo | | |
+| T10 | Web scaffold: router, query client, generated API client, error boundary | — | T01 | in_progress |  |  |
 | T11 | Design system foundation: tokens, fonts, themes, base components | — | T10 | blocked |  | blocked: CR-005: tokens.css location and typography tokens |
 | T12 | Web auth flows: register, sign-in, fallback, recovery, lock screen, sessions | AUTH-1, AUTH-2, AUTH-3, AUTH-4, AUTH-5, AUTH-6 | T08, T11 | todo | | |
 | T13 | PWA: manifest, service worker, update prompt, install guide | ONB-1 | T11 | todo | | |

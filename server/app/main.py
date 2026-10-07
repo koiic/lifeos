@@ -5,12 +5,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.platform import probes
+from app.platform import client_errors, probes
 from app.platform.config import Settings, load_settings
 from app.platform.db import create_engine
 from app.platform.errors import install_error_handlers, install_problem_openapi
 from app.platform.logging import configure_logging
 from app.platform.middleware import (
+    BodySizeLimitMiddleware,
     CsrfMiddleware,
     RequestContextMiddleware,
     SecurityHeadersMiddleware,
@@ -34,13 +35,22 @@ def create_app(settings: Settings) -> FastAPI:
         openapi_url="/api/v1/openapi.json" if settings.env == "local" else None,
     )
     app.state.settings = settings
+    app.state.client_error_limiter = client_errors.FixedWindowLimiter(
+        limit=client_errors.LIMIT_PER_MINUTE, window_s=60
+    )
     install_error_handlers(app)
     install_problem_openapi(app)
-    # Added last runs first: request context wraps security headers, which wrap the CSRF check.
+    # Added last runs first: request context wraps security headers, which wrap the body-size
+    # limit, which wraps the CSRF check.
     app.add_middleware(CsrfMiddleware, app_origin=settings.app_origin)
+    app.add_middleware(
+        BodySizeLimitMiddleware,
+        limits={"/api/v1/client-errors": client_errors.MAX_BODY_BYTES},
+    )
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestContextMiddleware)
     app.include_router(probes.router)
+    app.include_router(client_errors.router)
     return app
 
 

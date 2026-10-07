@@ -19,6 +19,12 @@ LOCATIONS = {"body", "query", "path", "header", "cookie"}
 # Messages from custom validators are free text and could quote the input; use fixed ones.
 FIXED_MESSAGES = {"value_error": "Value is not valid.", "assertion_error": "Value is not valid."}
 PROBLEM_CONTENT = {PROBLEM_JSON: {"schema": {"$ref": "#/components/schemas/Problem"}}}
+# Every mutation can be refused by the CSRF check and the body-size limit (middleware).
+MUTATION_PROBLEMS = {
+    "403": "Missing X-LifeOS-Client header or wrong Origin.",
+    "413": "The request body is too large.",
+}
+MUTATING_METHODS = {"post", "put", "patch", "delete"}
 
 
 class FieldError(BaseModel):
@@ -108,7 +114,12 @@ def install_problem_openapi(app: FastAPI) -> None:
         for unused in ("HTTPValidationError", "ValidationError"):
             components.pop(unused, None)
         for operations in schema.get("paths", {}).values():
-            for operation in operations.values():
+            for method, operation in operations.items():
+                if method in MUTATING_METHODS:
+                    for status, description in MUTATION_PROBLEMS.items():
+                        operation["responses"].setdefault(
+                            status, {"description": description, "content": PROBLEM_CONTENT}
+                        )
                 for status, response in operation.get("responses", {}).items():
                     json_schema = response.get("content", {}).get("application/json", {})
                     ref = json_schema.get("schema", {}).get("$ref", "")

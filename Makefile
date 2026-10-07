@@ -49,6 +49,7 @@ test-server: db
 
 test-web:
 	cd web && npm run test:unit -- --run --coverage
+	cd web && npm run build && npx --no-install size-limit
 
 migrations: db
 	./scripts/check_migrations.sh

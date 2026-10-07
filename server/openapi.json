@@ -87,6 +87,97 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/client-errors": {
+      "post": {
+        "description": "Record a client-side error (message, route pattern, version; no user data).",
+        "operationId": "client_errors_api_v1_client_errors_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "message": {
+                    "maxLength": 500,
+                    "minLength": 1,
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "route": {
+                    "maxLength": 200,
+                    "pattern": "^(/|(/([a-z-]+|:[a-zA-Z]+|\\*))+/?)$",
+                    "title": "Route",
+                    "type": "string"
+                  },
+                  "version": {
+                    "maxLength": 50,
+                    "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$",
+                    "title": "Version",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "route",
+                  "version"
+                ],
+                "title": "ClientErrorReport",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing X-LifeOS-Client header or wrong Origin."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request body is too large."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has invalid fields."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many reports"
+          }
+        },
+        "summary": "Client Errors",
+        "tags": [
+          "platform"
+        ]
+      }
+    },
     "/api/v1/healthz": {
       "get": {
         "description": "The API process is up.",

@@ -36,3 +36,10 @@ def test_custom_validator_messages_never_echo_input(client: TestClient) -> None:
     assert response.json()["errors"] == [
         {"field": "code", "code": "value_error", "message": "Value is not valid."}
     ]
+
+
+def test_mutations_declare_csrf_and_size_problems(app: FastAPI) -> None:
+    for status in ("403", "413"):
+        declared = responses(app, "/api/v1/client-errors", "post")[status]
+        assert declared["content"] == {"application/problem+json": {"schema": PROBLEM_REF}}
+    assert "403" not in responses(app, "/api/v1/healthz", "get")

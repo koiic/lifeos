@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Initial JS (spec 11.7, NFR-2)",
+    "path": "dist/assets/index-*.js",
+    "gzip": true,
+    "limit": "250 KB"
+  }
+]

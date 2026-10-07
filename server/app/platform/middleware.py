@@ -5,10 +5,11 @@ import time
 import uuid
 
 import structlog
+from starlette.exceptions import HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.types import ASGIApp
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.platform.errors import problem_response
 from app.platform.logging import exception_fields
@@ -84,17 +85,69 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
-class CsrfMiddleware(BaseHTTPMiddleware):
-    """Mutations must carry `X-LifeOS-Client: web` and an Origin equal to the app origin."""
+class CsrfMiddleware:
+    """Mutations must carry `X-LifeOS-Client: web` and an Origin equal to the app origin.
+
+    Pure ASGI (headers only): it never wraps `receive`, so body errors raised further out (the
+    body-size limit) reach the route's error handling unchanged.
+    """
 
     def __init__(self, app: ASGIApp, app_origin: str) -> None:
-        super().__init__(app)
-        self.app_origin = app_origin
+        self.app = app
+        self.app_origin = app_origin.encode()
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        if requires_csrf_check(request.method) and (
-            request.headers.get(CLIENT_HEADER) != CLIENT_VALUE
-            or request.headers.get("Origin") != self.app_origin
-        ):
-            return problem_response(403, "This request must come from the Life OS app.")
-        return await call_next(request)
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http" and requires_csrf_check(scope["method"]):
+            headers = dict(scope["headers"])
+            if (
+                headers.get(CLIENT_HEADER.lower().encode()) != CLIENT_VALUE.encode()
+                or headers.get(b"origin") != self.app_origin
+            ):
+                response = problem_response(403, "This request must come from the Life OS app.")
+                await response(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
+
+
+DEFAULT_MAX_BODY_BYTES = 1024 * 1024
+
+
+class BodySizeLimitMiddleware:
+    """Reject request bodies over a per-path limit (413 problem+json) without buffering them.
+
+    A declared `Content-Length` over the limit is refused before the app runs; a chunked body is
+    counted as it streams and fails with 413 once it passes the limit. Later tasks with larger
+    uploads (imports, spec 13.2) add their path to `limits`.
+    """
+
+    def __init__(
+        self, app: ASGIApp, limits: dict[str, int], default: int = DEFAULT_MAX_BODY_BYTES
+    ) -> None:
+        self.app = app
+        self.limits = limits
+        self.default = default
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        limit = self.limits.get(scope["path"], self.default)
+        headers = dict(scope["headers"])
+        declared = headers.get(b"content-length")
+        if declared is not None and (not declared.isdigit() or int(declared) > limit):
+            response = problem_response(413, "The request body is too large.")
+            await response(scope, receive, send)
+            return
+
+        received = 0
+
+        async def limited_receive() -> Message:
+            nonlocal received
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > limit:
+                    raise HTTPException(status_code=413, detail="The request body is too large.")
+            return message
+
+        await self.app(scope, limited_receive, send)

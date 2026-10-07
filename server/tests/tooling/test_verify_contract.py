@@ -48,7 +48,7 @@ def test_verify_runs_every_plan_6_1_check() -> None:
         ("types", ["mypy --strict app", "tsc --noEmit"]),
         ("arch", ["lint-imports"]),
         ("test-server", ["pytest", "--cov=app", "scripts/check_coverage.py"]),
-        ("test-web", ["--coverage"]),
+        ("test-web", ["--coverage", "npm run build", "size-limit"]),
         ("migrations", ["check_migrations.sh"]),
         ("api-contract", ["check_openapi.sh"]),
         ("tokens", ["build_tokens.py --check", "check_contrast.py"]),
@@ -132,3 +132,12 @@ def test_commitlint_runs_on_the_commit_message() -> None:
 )
 def test_kit_files_are_in_place(path: str) -> None:
     assert (ROOT / path).is_file()
+
+
+def test_initial_js_budget_is_250_kb_gzipped() -> None:
+    import json
+
+    [budget] = json.loads((ROOT / "web/.size-limit.json").read_text())
+    assert budget["limit"] == "250 KB"
+    assert budget["gzip"] is True
+    assert budget["path"] == "dist/assets/index-*.js"
