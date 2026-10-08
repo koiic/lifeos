@@ -1,0 +1,14 @@
+/* Ladle paints its own preview background; stories sit on the theme's page background instead. */
+/* stylelint-disable-next-line selector-class-pattern -- Ladle's own class */
+.ladle-main {
+  padding: 0;
+  background-color: var(--bg);
+}
+
+[data-story-root] {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: var(--space-4);
+  background-color: var(--bg);
+  color: var(--ink);
+}

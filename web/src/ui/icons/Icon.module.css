@@ -1,0 +1,10 @@
+.icon {
+  flex: none;
+  width: var(--size-icon);
+  height: var(--size-icon);
+}
+
+.icon[data-size='sm'] {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+}

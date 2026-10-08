@@ -63,6 +63,8 @@ export default {
     'declaration-property-value-disallowed-list': { '/.*/': ['/var\\(\\s*--[^,)]+,/'] },
     // Shorthands mix tokens with raw durations and font values; use the longhands.
     'property-disallowed-list': ['transition', 'animation', 'font'],
+    // Decision (T11): CSS Modules' `composes` lets a component's own module reuse shared rules.
+    'property-no-unknown': [true, { ignoreProperties: ['composes'] }],
     // Decision (T01): CSS Modules class names are camelCase so they read as styles.cardTitle in TSX.
     'selector-class-pattern': '^[a-z][a-zA-Z0-9]*$',
   },

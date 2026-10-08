@@ -1,0 +1,40 @@
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background-color: var(--scrim);
+  opacity: var(--opacity-scrim);
+}
+
+.dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: var(--size-dialog-max);
+  padding: var(--space-6);
+  border-radius: var(--radius-card-lg);
+  background-color: var(--surface);
+  color: var(--ink);
+}
+
+.description {
+  color: var(--ink-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}

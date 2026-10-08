@@ -1,0 +1,28 @@
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.shape {
+  display: block;
+  background-color: var(--surface-tint);
+}
+
+.shape[data-shape='line'] {
+  width: 100%;
+  height: var(--space-4);
+  border-radius: var(--radius-chip);
+}
+
+.shape[data-shape='block'] {
+  width: 100%;
+  height: var(--space-10);
+  border-radius: var(--radius-card);
+}
+
+.shape[data-shape='circle'] {
+  width: var(--size-touch-target);
+  height: var(--size-touch-target);
+  border-radius: var(--radius-chip);
+}

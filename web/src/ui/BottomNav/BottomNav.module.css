@@ -1,0 +1,76 @@
+.nav {
+  min-height: var(--size-nav-height);
+  padding-bottom: var(--size-safe-bottom); /* clears the iPhone home indicator (spec 11, CR-024) */
+  border-top: var(--size-border) solid var(--surface-tint);
+  background-color: var(--surface);
+}
+
+.list {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  flex: 1;
+}
+
+.link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: center;
+  justify-content: center;
+  min-height: var(--size-nav-height);
+  border-radius: var(--radius-button);
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+.link[aria-current='page'] {
+  color: var(--ink);
+}
+
+.link[aria-current='page'] svg {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-chip);
+  background-color: var(--accent);
+  color: var(--accent-ink);
+  box-sizing: content-box;
+}
+
+.item:has(.action) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The add action: "accent-ink on sun", the add button pair (spec 5.3), outlined like the FAB. */
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-touch-target);
+  height: var(--size-touch-target);
+  padding: 0;
+  border-width: var(--size-border);
+  border-style: solid;
+  border-color: var(--border-strong);
+  border-radius: var(--radius-chip);
+  background-color: var(--sun);
+  color: var(--accent-ink);
+  cursor: pointer;
+}
+
+.label {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-label);
+}
+
+.link:focus-visible,
+.action:focus-visible {
+  outline-color: var(
+    --surface-ink
+  ); /* the bar's text colour, whatever the link's state or fill (CR-024) */
+}

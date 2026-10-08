@@ -1,0 +1,13 @@
+/* Plan 5.3 rule 1: this component's own module; the shared rules live in internal/State.module.css. */
+
+.state {
+  composes: state from '../internal/State.module.css';
+}
+
+.badge {
+  composes: badge from '../internal/State.module.css';
+}
+
+.body {
+  composes: body from '../internal/State.module.css';
+}

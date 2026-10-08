@@ -1,0 +1,28 @@
+/* Shared by EmptyState and ErrorState. */
+.state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3);
+  border-radius: var(--radius-chip);
+  background-color: var(--surface);
+  color: var(--ink); /* ink and danger on surface are proven pairs */
+}
+
+.badge[data-tone='danger'] {
+  color: var(--danger);
+}
+
+.body {
+  max-width: var(--size-text-max);
+  color: var(--ink-muted);
+}

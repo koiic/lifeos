@@ -1,0 +1,67 @@
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background-color: var(--scrim);
+  opacity: var(--opacity-scrim);
+}
+
+.sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: 90dvh; /* dynamic viewport: the iOS toolbar does not cover it */
+  padding: var(--space-2) var(--space-5) var(--space-6);
+  border-top-left-radius: var(--radius-sheet);
+  border-top-right-radius: var(--radius-sheet);
+  background-color: var(--surface);
+  color: var(--ink);
+  overflow-y: auto;
+  transition-property: transform;
+  transition-duration: var(--motion-duration-base);
+  transition-timing-function: var(--motion-ease-out);
+}
+
+/* Follow the finger exactly while dragging; snap back with the motion tokens (0 when reduced). */
+.sheet[data-dragging='true'] {
+  transition-duration: 0s;
+}
+
+/* The handle and header strip: the drag area (the page does not scroll from here). */
+.grip {
+  display: flex;
+  flex-direction: column;
+  touch-action: none;
+  cursor: grab;
+}
+
+.handle {
+  align-self: center;
+  width: var(--space-10);
+  height: var(--space-1);
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius-chip);
+  background-color: var(--ink-muted); /* visible on --surface in both themes; drags (CR-024) */
+}
+
+.header {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-4);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}

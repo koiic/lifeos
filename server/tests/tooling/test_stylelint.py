@@ -29,6 +29,8 @@ ACCEPTED = [
     "animation-name: wiggle",
     "animation-duration: var(--motion-duration-base)",
     "border: var(--size-focus-ring) solid var(--border-strong)",
+    # T11: CSS Modules composition, so a component's own module can reuse shared rules
+    "composes: control from '../internal/Field.module.css'",
 ]
 
 REJECTED = [
@@ -58,6 +60,8 @@ REJECTED = [
     "transition: opacity 200ms ease-in",
     "animation: spin 300ms linear",
     "font: 16px/1.5 Arial, sans-serif",
+    # Only `composes` is let through the unknown-property check
+    "compose: control",
 ]
 
 

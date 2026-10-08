@@ -4,7 +4,7 @@
 # check_migrations.sh, check_openapi.sh, check_coverage.py and ensure_db.sh are created in T01 and
 # extended by later tasks. Created by the tasks that own them: check_external_origins.sh and
 # scan_images.sh (T16), zap_baseline.sh (T50), npm "lighthouse" script (T13), npm "test:e2e"
-# script (first task with Playwright tests, T12).
+# script (first task with Playwright tests: T11, visual snapshots of the Ladle stories).
 
 .PHONY: verify verify-fast verify-e2e verify-full fmt-check lint types arch test-server test-web \
         migrations api-contract tokens trace secrets dev bootstrap db

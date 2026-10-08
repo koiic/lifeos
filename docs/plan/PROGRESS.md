@@ -20,7 +20,7 @@ Spec version: 1 · Plan version: 1
 | T08 | App-lock PIN, re-auth, session management, passkey management, recovery invite | AUTH-8 | T07 | done | f83a444 | make verify green (1110 server, 31 web); ~130 tests, AUTH-8 tagged; 25 mutations caught; 4 reviewers fixed/answered; CR-017..022 approved |
 | T09 | Profile, settings, consent and per-user seeding | — | T06 | blocked |  | blocked: CR-004: optimistic concurrency version vs updated_at |
 | T10 | Web scaffold: router, query client, generated API client, error boundary | — | T01 | done | d655afd | make verify green (exit 0, Postgres 16): 322 server tests (78 new), web 31 tests (lib/api 100% lines), initial JS 73.4 kB/250 kB, ESLint boundaries tested at any depth, api-contract regenerated, trace 0 errors, gitleaks clean; 4 reviewers CHANGES REQUIRED -> all findings fixed or answered (T10.md); T07 follow-up: key client-error limit on client IP |
-| T11 | Design system foundation: tokens, fonts, themes, base components | — | T10 | blocked |  | blocked: CR-005: tokens.css location and typography tokens |
+| T11 | Design system foundation: tokens, fonts, themes, base components | — | T10 | in_progress |  | blocked: CR-005: tokens.css location and typography tokens |
 | T12 | Web auth flows: register, sign-in, fallback, recovery, lock screen, sessions | AUTH-1, AUTH-2, AUTH-3, AUTH-4, AUTH-5, AUTH-6 | T08, T11 | todo | | |
 | T13 | PWA: manifest, service worker, update prompt, install guide | ONB-1 | T11 | todo | | |
 | T14 | Web Push end to end: VAPID, subscriptions, test push, permission card | ONB-3 | T05, T13 | todo | | |

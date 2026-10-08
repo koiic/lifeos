@@ -1,0 +1,22 @@
+.fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--size-touch-target) + var(--space-3));
+  height: calc(var(--size-touch-target) + var(--space-3));
+  margin: 0;
+  padding: 0;
+  border-width: var(--size-border);
+  border-style: solid;
+  border-color: var(--border-strong);
+  border-radius: var(--radius-chip);
+  background-color: var(--sun);
+  color: var(--accent-ink); /* "accent-ink on sun": the add button */
+  cursor: pointer;
+}
+
+/* A filled control's own text colour is proven only on its fill; its ring sits on the surface
+   around it, so it takes that surface's text colour (CR-024). */
+.fab:focus-visible {
+  outline-color: var(--surface-ink);
+}

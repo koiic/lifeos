@@ -1,0 +1,5 @@
+/* Plan 5.3 rule 1: this component's own module; the shared rules live in internal/Field.module.css. */
+
+.select {
+  composes: control from '../internal/Field.module.css';
+}

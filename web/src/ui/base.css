@@ -1,0 +1,75 @@
+/* Element defaults (spec 5.3, 5.4, 5.6, 5.8). Imported once by src/main.tsx and the Ladle provider. */
+
+/* Sizes include padding and border, so a 44 px target is 44 px whatever the element. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Native controls (date pickers, scrollbars) follow the applied theme. */
+:root {
+  color-scheme: light;
+
+  /* CR-024: the text colour of the surface a control sits on (an alias, not a new value). Toned
+     surfaces set it to their own text colour; filled controls draw their focus ring with it. */
+  --surface-ink: var(--ink);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+html {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 100%; /* rem-based type follows the iOS text-size setting (spec 5.4) */
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-body);
+  line-height: var(--line-height-body);
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-variation-settings: var(--font-variation-display);
+  line-height: var(--line-height-heading);
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-display);
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-heading);
+}
+
+p {
+  margin: 0;
+}
+
+/* Spec 5.8 as amended by CR-023/CR-024: a 2 px ring in the current text colour (--ink on pages,
+   --accent-ink on toned surfaces: the pair already proven there), 2 px offset. */
+:focus-visible {
+  outline: currentcolor solid var(--size-focus-ring);
+  outline-offset: var(--size-focus-offset);
+}
+
+/* Spec 5.6: no motion under prefers-reduced-motion (the duration tokens are also 0 there). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

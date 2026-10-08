@@ -1,0 +1,6 @@
+.area {
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+  line-height: var(--line-height-body);
+  resize: vertical;
+}

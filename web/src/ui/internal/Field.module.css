@@ -1,0 +1,42 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  color: var(--ink);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-label);
+}
+
+.hint {
+  color: var(--ink-muted);
+  font-size: var(--font-size-caption);
+}
+
+.error {
+  color: var(--danger);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-body-strong);
+}
+
+/* The control styles every field shares (input, textarea, select). */
+.control {
+  width: 100%;
+  min-height: var(--size-touch-target);
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-width: var(--size-border);
+  border-style: solid;
+  border-color: var(--border-strong);
+  border-radius: var(--radius-input);
+  background-color: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--font-size-body);
+}
+
+.control[aria-invalid='true'] {
+  border-color: var(--danger);
+}

@@ -1,0 +1,71 @@
+.row {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  font-weight: var(--font-weight-body-strong);
+}
+
+.description {
+  color: var(--ink-muted);
+  font-size: var(--font-size-caption);
+}
+
+/* 44 px target (spec 5.8) around a track drawn with border and background. */
+.switch {
+  position: relative;
+  flex: none;
+  width: calc(var(--size-touch-target) + var(--space-5));
+  height: var(--size-touch-target);
+  margin: 0;
+  padding: 0;
+  border-width: var(--size-border);
+  border-style: solid;
+  border-color: var(--border-strong);
+  border-radius: var(--radius-chip);
+  background-color: var(--surface-tint);
+  cursor: pointer;
+  transition-property: background-color;
+  transition-duration: var(--motion-duration-fast);
+  transition-timing-function: var(--motion-ease-out);
+}
+
+.switch[aria-checked='true'] {
+  background-color: var(--accent);
+}
+
+/* A filled control's own text colour is proven only on its fill; its ring sits on the surface
+   around it, so it takes that surface's text colour (CR-024). */
+.switch:focus-visible {
+  outline-color: var(--surface-ink);
+}
+
+.thumb {
+  position: absolute;
+  top: var(--space-1);
+  left: var(--space-1);
+  width: calc(var(--size-touch-target) - var(--space-3));
+  height: calc(var(--size-touch-target) - var(--space-3));
+  border-radius: var(--radius-chip);
+
+  /* Off: border-strong on surface-tint (>= 3:1 non-text in both themes). */
+  background-color: var(--border-strong);
+  transition-property: transform;
+  transition-duration: var(--motion-duration-fast);
+  transition-timing-function: var(--motion-ease-out);
+}
+
+.switch[aria-checked='true'] .thumb {
+  /* On: accent-ink on accent (a proven pair: 5.78 Sorbet, 10.69 Night Garden). */
+  background-color: var(--accent-ink);
+  transform: translateX(var(--space-5));
+}

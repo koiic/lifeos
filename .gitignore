@@ -30,6 +30,10 @@ coverage.json
 node_modules/
 web/coverage/
 web/dist/
+# Ladle preview build and Playwright output (T11)
+web/build/
+web/test-results/
+web/playwright-report/
 
 # Claude Code hook state
 .claude/state/

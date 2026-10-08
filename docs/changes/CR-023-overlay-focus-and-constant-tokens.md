@@ -78,4 +78,10 @@ into the existing objects of the design token file, keeping every current value,
 This produces `--scrim`, `--size-border`, `--size-icon`, `--size-icon-sm`, `--size-dialog-max`,
 `--size-text-max`, `--opacity-scrim` and `--opacity-disabled`.
 
+Applied 2026-10-08: Ibrahim was away from the laptop (remote control) and gave Claude Code one-time
+permission to run an add-only merge script for exactly this JSON (it refused to change any
+existing value), followed by `python3 scripts/build_tokens.py` and `--check`. The script also
+re-indented three one-line objects from the CR-005 edit (`font-variation` ×2, `font-weight`);
+their values are unchanged.
+
 Still to do (Ibrahim): update spec 5.3 and 5.8, re-export, commit `docs: sync spec vN (CR-023)`.

@@ -102,6 +102,9 @@ export default tseslint.config(
       'node_modules/',
       'coverage/',
       'dist/',
+      'build/',
+      'test-results/',
+      'playwright-report/',
       // Generated files (plan 5.1, 4.4); their generators are checked instead.
       'src/ui/tokens.ts',
       'src/lib/api/schema.d.ts',

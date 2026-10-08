@@ -1,0 +1,65 @@
+.chip {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  min-height: var(--size-touch-target);
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-width: var(--size-border);
+  border-style: solid;
+  border-color: var(--border-strong);
+  border-radius: var(--radius-chip);
+  background-color: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-label);
+  cursor: pointer;
+  transition-property: background-color;
+  transition-duration: var(--motion-duration-fast);
+  transition-timing-function: var(--motion-ease-out);
+}
+
+/* The ring sits on the page whatever the chip's fill: the surface's text colour (CR-024). */
+.chip:focus-visible {
+  outline-color: var(--surface-ink);
+}
+
+.chip[aria-pressed='true'],
+.input:checked + .chip {
+  background-color: var(--lilac);
+  color: var(--accent-ink); /* "accent-ink on lilac": selected chips */
+}
+
+.group {
+  margin: 0;
+  padding: 0;
+  border-width: 0;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.legend {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  padding-bottom: var(--space-2);
+  color: var(--ink);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-label);
+}
+
+.choice {
+  position: relative;
+  display: inline-flex;
+}
+
+.input:focus-visible + .chip {
+  outline: var(--surface-ink) solid var(--size-focus-ring);
+  outline-offset: var(--size-focus-offset);
+}

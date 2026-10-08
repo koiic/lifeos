@@ -35,6 +35,18 @@
   --size-touch-target: 44px;
   --size-nav-height: 72px;
   --size-focus-ring: 2px;
+  --size-focus-offset: 2px;
+  --size-border: 2px;
+  --size-icon: 1.5rem;
+  --size-icon-sm: 1.25rem;
+  --size-dialog-max: 24rem;
+  --size-text-max: 20rem;
+  --size-safe-bottom: env(safe-area-inset-bottom);
+  --font-weight-body: 400;
+  --font-weight-body-strong: 500;
+  --font-weight-label: 700;
+  --opacity-scrim: 0.4;
+  --opacity-disabled: 0.6;
   --bg: #FFF4F1;
   --surface: #FFFFFF;
   --surface-tint: #FFD9CF;
@@ -48,10 +60,12 @@
   --butter: #FFE08A;
   --danger: #B3261E;
   --border-strong: #2B1B2E;
+  --scrim: #2B1B2E;
   --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
   --font-weight-display: 800;
   --font-weight-heading: 800;
+  --font-variation-display: normal;
 }
 
 :root[data-theme="dark"] {
@@ -68,10 +82,12 @@
   --butter: #4A4578;
   --danger: #FF8A80;
   --border-strong: #7A72B4;
+  --scrim: #0B0A18;
   --font-display: 'Fraunces', Georgia, serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
   --font-weight-display: 600;
   --font-weight-heading: 600;
+  --font-variation-display: "SOFT" 100;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -89,10 +105,12 @@
     --butter: #4A4578;
     --danger: #FF8A80;
     --border-strong: #7A72B4;
+    --scrim: #0B0A18;
     --font-display: 'Fraunces', Georgia, serif;
     --font-body: 'DM Sans', system-ui, sans-serif;
     --font-weight-display: 600;
     --font-weight-heading: 600;
+    --font-variation-display: "SOFT" 100;
   }
 }
 

@@ -1,6 +1,10 @@
 node_modules/
 coverage/
 dist/
+build/
+test-results/
+playwright-report/
+tests/visual/**/*.png
 package-lock.json
 # Generated (plan 5.1, 4.4)
 src/ui/tokens.css

@@ -25,6 +25,8 @@ def theme_vars(theme: dict) -> list[tuple[str, str]]:
     out = [(name, value) for name, value in theme["color"].items()]
     out += [(f"font-{k}", v) for k, v in theme["font"].items()]
     out += [(f"font-weight-{k}", v) for k, v in theme["font-weight"].items()]
+    # CR-005: per-theme font-variation-settings (Fraunces "SOFT" 100 in Night Garden).
+    out += [(f"font-variation-{k}", v) for k, v in theme.get("font-variation", {}).items()]
     return out
 
 

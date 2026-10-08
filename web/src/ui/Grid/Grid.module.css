@@ -1,0 +1,51 @@
+.grid {
+  display: grid;
+}
+
+.grid[data-columns='1'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.grid[data-columns='2'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid[data-columns='3'] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid[data-columns='4'] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.grid[data-gap='1'] {
+  gap: var(--space-1);
+}
+
+.grid[data-gap='2'] {
+  gap: var(--space-2);
+}
+
+.grid[data-gap='3'] {
+  gap: var(--space-3);
+}
+
+.grid[data-gap='4'] {
+  gap: var(--space-4);
+}
+
+.grid[data-gap='5'] {
+  gap: var(--space-5);
+}
+
+.grid[data-gap='6'] {
+  gap: var(--space-6);
+}
+
+.grid[data-gap='8'] {
+  gap: var(--space-8);
+}
+
+.grid[data-gap='10'] {
+  gap: var(--space-10);
+}

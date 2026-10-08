@@ -1,0 +1,73 @@
+.button {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size-touch-target);
+  min-height: var(--size-touch-target);
+  margin: 0;
+  padding: var(--space-2) var(--space-5);
+  border-width: var(--size-border);
+  border-style: solid;
+  border-radius: var(--radius-button);
+  font-family: var(--font-body);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-label);
+  line-height: var(--line-height-body); /* wrapped labels at large text sizes stay apart */
+  cursor: pointer;
+  transition-property: background-color, border-color, transform;
+  transition-duration: var(--motion-duration-fast);
+  transition-timing-function: var(--motion-ease-out);
+}
+
+.button:disabled,
+.button[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: var(--opacity-disabled);
+}
+
+.button:active:not(:disabled, [aria-disabled='true']) {
+  transform: translateY(1px);
+}
+
+.button[data-variant='primary'] {
+  border-color: var(--accent);
+  background-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.button[data-variant='secondary'] {
+  border-color: var(--border-strong);
+  background-color: var(--surface);
+  color: var(--ink);
+}
+
+.button[data-variant='ghost'] {
+  border-color: transparent;
+  background-color: transparent;
+  color: inherit; /* --ink on pages, --accent-ink on toned cards (proven pairs) */
+}
+
+.button[data-variant='danger'] {
+  border-color: var(--danger);
+  background-color: var(--surface);
+  color: var(--danger);
+}
+
+/* A filled control's own text colour is proven only on its fill; its ring sits on the surface
+   around it, so it takes that surface's text colour (CR-024). */
+.button:is(
+    [data-variant='primary'],
+    [data-variant='secondary'],
+    [data-variant='danger']
+  ):focus-visible {
+  outline-color: var(--surface-ink);
+}
+
+.button[data-variant='icon'] {
+  padding: 0;
+  border-color: transparent;
+  border-radius: var(--radius-chip);
+  background-color: transparent;
+  color: inherit;
+}

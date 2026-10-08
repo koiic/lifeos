@@ -1,0 +1,55 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-card);
+  color: var(--ink);
+
+  /* CR-024: a card's own text colour for the controls on it (reset, so nesting cannot leak). */
+  --surface-ink: var(--ink);
+}
+
+.card[data-tone='surface'] {
+  background-color: var(--surface);
+}
+
+/* Text on accent and the light pastels is --accent-ink; on butter, --ink (token contrast pairs). */
+.card[data-tone='fertile'] {
+  background-color: var(--fertile);
+  color: var(--accent-ink);
+
+  --surface-ink: var(--accent-ink);
+}
+
+.card[data-tone='sun'] {
+  background-color: var(--sun);
+  color: var(--accent-ink);
+
+  --surface-ink: var(--accent-ink);
+}
+
+.card[data-tone='lilac'] {
+  background-color: var(--lilac);
+  color: var(--accent-ink);
+
+  --surface-ink: var(--accent-ink);
+}
+
+.card[data-tone='butter'] {
+  background-color: var(--butter);
+}
+
+.card[data-tone='accent'] {
+  background-color: var(--accent);
+  color: var(--accent-ink);
+
+  --surface-ink: var(--accent-ink);
+}
+
+.card[data-sticker='true'] {
+  border-width: var(--size-border);
+  border-style: solid;
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sticker);
+}
