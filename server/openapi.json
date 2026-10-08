@@ -79,6 +79,80 @@
         "title": "PasskeyVerify",
         "type": "object"
       },
+      "PasswordRegistered": {
+        "description": "Add this to an authenticator app, then confirm a code (the account is inactive until\nthen; CR-014).",
+        "properties": {
+          "provisioning_uri": {
+            "title": "Provisioning Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provisioning_uri"
+        ],
+        "title": "PasswordRegistered",
+        "type": "object"
+      },
+      "PasswordRegistration": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "maxLength": 254,
+            "title": "Email",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 400,
+            "title": "Name",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 256,
+            "title": "Password",
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 200,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "PasswordRegistration",
+        "type": "object"
+      },
+      "PasswordSignIn": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "maxLength": 254,
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 256,
+            "title": "Password",
+            "type": "string"
+          },
+          "totp": {
+            "maxLength": 16,
+            "title": "Totp",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "totp"
+        ],
+        "title": "PasswordSignIn",
+        "type": "object"
+      },
       "Problem": {
         "properties": {
           "detail": {
@@ -301,6 +375,37 @@
         "title": "Status",
         "type": "object"
       },
+      "TotpConfirm": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "maxLength": 16,
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "TotpConfirm",
+        "type": "object"
+      },
+      "TotpConfirmed": {
+        "properties": {
+          "recovery_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Recovery Codes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "recovery_codes"
+        ],
+        "title": "TotpConfirmed",
+        "type": "object"
+      },
       "WebAuthnOptions": {
         "additionalProperties": true,
         "description": "WebAuthn creation or request options (JSON form) for the browser.",
@@ -520,6 +625,78 @@
         ]
       }
     },
+    "/api/v1/auth/register/password": {
+      "post": {
+        "description": "Creates the account, inactive until `/auth/totp/confirm`; its session can only confirm.",
+        "operationId": "register_password_api_v1_auth_register_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordRegistration"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasswordRegistered"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The invite is not valid. Or: Missing X-LifeOS-Client header or wrong Origin."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The email address already has an account."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request body is too large."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has invalid fields."
+          }
+        },
+        "summary": "Register Password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/auth/register/verify": {
       "post": {
         "operationId": "register_api_v1_auth_register_verify_post",
@@ -662,6 +839,87 @@
         ]
       }
     },
+    "/api/v1/auth/signin/password": {
+      "post": {
+        "operationId": "sign_in_password_api_v1_auth_signin_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordSignIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedIn"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in, or the session has ended."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing X-LifeOS-Client header or wrong Origin."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request body is too large."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has invalid fields."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many failed sign-ins (AUTH-7); see Retry-After."
+          }
+        },
+        "summary": "Sign In Password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/auth/signin/recovery": {
       "post": {
         "description": "Spends the code and returns passkey creation options; no session until the new passkey\nis verified at /auth/passkeys/verify (CR-013).",
@@ -726,6 +984,16 @@
               }
             },
             "description": "The request has invalid fields."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many failed sign-ins (AUTH-7); see Retry-After."
           }
         },
         "summary": "Recovery Sign In",
@@ -797,6 +1065,16 @@
               }
             },
             "description": "The request has invalid fields."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many failed sign-ins (AUTH-7); see Retry-After."
           }
         },
         "summary": "Sign In",
@@ -834,6 +1112,98 @@
           }
         },
         "summary": "Sign Out",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/totp/confirm": {
+      "post": {
+        "description": "Activates the account; returns the recovery codes once.",
+        "operationId": "confirm_totp_api_v1_auth_totp_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TotpConfirm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpConfirmed"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in, or the session has ended."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing X-LifeOS-Client header or wrong Origin."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The authenticator app is already confirmed."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request body is too large."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has invalid fields."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many failed sign-ins (AUTH-7); see Retry-After."
+          }
+        },
+        "summary": "Confirm Totp",
         "tags": [
           "auth"
         ]

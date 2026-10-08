@@ -229,6 +229,8 @@ EXACT_GRANTS: dict[str, dict[str, dict[str, set[str] | str]]] = {
         "reminders": {"SELECT": {"id", "user_id", "status", "fire_at"}},
         "medication_doses": {"SELECT": {"id", "user_id", "status", "scheduled_at"}},
         "pending_deletions": {"SELECT": ALL},
+        # CR-010: retention deletes old auth events (10.1 account.purge); `at` for the WHERE.
+        "auth_events": {"SELECT": {"at"}, "DELETE": {ALL}},
     },
     "lifeos_dispatcher": {
         "reminders": {"SELECT": ALL, "UPDATE": {"status", "attempts", "sent_at", "fire_at"}},

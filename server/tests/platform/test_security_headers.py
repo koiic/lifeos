@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.main import create_app
 from app.platform.config import Settings
-from tests.kek import TEST_KEK
+from tests.kek import TEST_IP_KEY, TEST_KEK
 from tests.platform.conftest import GOOD_HEADERS, ORIGIN
 
 EXPECTED = {
@@ -39,11 +39,17 @@ def test_interactive_docs_are_disabled(client: TestClient, path: str) -> None:
 def test_openapi_document_is_served_only_locally(client: TestClient, database_url: str) -> None:
     assert client.get("/api/v1/openapi.json").status_code == 200
     settings = Settings(
-        env="production", app_origin=ORIGIN, database_url=database_url, lifeos_kek=TEST_KEK
+        env="production",
+        app_origin=ORIGIN,
+        database_url=database_url,
+        lifeos_kek=TEST_KEK,
+        ip_hmac_key=TEST_IP_KEY,
     )
     # Routing only: no lifespan (a production start-up requires a real lifeos_app login, T05).
     prod = TestClient(create_app(settings), base_url=ORIGIN)
-    assert prod.get("/api/v1/openapi.json").status_code == 404
+    # Through the tunnel (CR-015), so the client-IP check passes and routing answers.
+    response = prod.get("/api/v1/openapi.json", headers={"CF-Connecting-IP": "203.0.113.5"})
+    assert response.status_code == 404
 
 
 @pytest.mark.parametrize(

@@ -1,8 +1,9 @@
 """Client error reports (spec 11.7): `POST /api/v1/client-errors` → 204, 20 per minute.
 
-The limit has no key in the spec; before sign-in there is no session and client IPs are not
-trusted yet, so it applies to the endpoint as a whole, per API process (T10 Decisions). It runs
-before the body is read, so invalid and oversized reports count too (the body itself is capped by
+The limit has no key in the spec; before sign-in there is no session, so it is kept per client IP
+(the HMAC, T07; T10 had it endpoint-wide until client IPs were trusted), in memory per API
+process: a cost guard against log flooding, not an exact quota. It runs before the body is read,
+so invalid and oversized reports count too (the body itself is capped by
 `BodySizeLimitMiddleware`).
 
 Browser error messages can quote data (JSON.parse snippets, validation issues), so messages are
@@ -21,12 +22,14 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import AfterValidator, BaseModel, StringConstraints, ValidationError
 
+from app.platform.client_ip import client_ip_hash
 from app.platform.errors import Problem, problem_response
 
 router = APIRouter(prefix="/api/v1", tags=["platform"])
 log = structlog.get_logger()
 
 LIMIT_PER_MINUTE = 20
+TOTAL_PER_MINUTE = 200  # per process, across all IPs: a ceiling on log volume
 MAX_BODY_BYTES = 4096
 
 # A route pattern such as /health/:tab or /settings/*; no digits, so dates and ids cannot pass.
@@ -74,6 +77,43 @@ class FixedWindowLimiter:
         return None
 
 
+class KeyedLimiter:
+    """A `FixedWindowLimiter` per key (the client IP hash) under a total ceiling; forgets keys
+    whose window ended, and refuses new keys while the table is full of live ones."""
+
+    MAX_KEYS = 10_000
+
+    def __init__(
+        self,
+        limit: int,
+        window_s: int,
+        clock: Callable[[], float] = time.monotonic,
+        total: int = TOTAL_PER_MINUTE,
+    ) -> None:
+        self.limit = limit
+        self.window_s = window_s
+        self.clock = clock
+        self.total = FixedWindowLimiter(total, window_s, clock)
+        self._limiters: dict[bytes, FixedWindowLimiter] = {}
+
+    def hit(self, key: bytes) -> int | None:
+        limiter = self._limiters.get(key)
+        if limiter is None and len(self._limiters) >= self.MAX_KEYS:
+            now = self.clock()
+            self._limiters = {
+                k: v for k, v in self._limiters.items() if now - v.window_start < self.window_s
+            }
+            if len(self._limiters) >= self.MAX_KEYS:
+                return self.window_s
+        retry_after = self.total.hit()
+        if retry_after is not None:
+            return retry_after
+        if limiter is None:
+            limiter = FixedWindowLimiter(self.limit, self.window_s, self.clock)
+            self._limiters[key] = limiter
+        return limiter.hit()
+
+
 class ClientErrorReport(BaseModel):
     message: Annotated[
         str, StringConstraints(min_length=1, max_length=500), AfterValidator(clean_message)
@@ -103,8 +143,8 @@ REQUEST_BODY: dict[str, Any] = {
 )
 async def client_errors(request: Request) -> Response | JSONResponse:
     """Record a client-side error (message, route pattern, version; no user data)."""
-    limiter: FixedWindowLimiter = request.app.state.client_error_limiter
-    retry_after = limiter.hit()
+    limiter: KeyedLimiter = request.app.state.client_error_limiter
+    retry_after = limiter.hit(client_ip_hash(request))
     if retry_after is not None:
         return problem_response(
             429, "Too many error reports.", headers={"Retry-After": str(retry_after)}

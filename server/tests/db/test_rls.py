@@ -186,6 +186,20 @@ async def test_lifeos_app_has_crud_on_the_system_tables(db: asyncpg.Connection) 
     await db.execute(
         "INSERT INTO pending_deletions (user_id, delete_after) VALUES ($1, now())", admin
     )
+    session = uuid.uuid4()
+    await db.execute("SELECT set_config('app.user_id', $1, true)", str(admin))
+    await db.execute(
+        "INSERT INTO sessions (id, user_id, token_hash, expires_at) VALUES ($1, $2, $3, now())",
+        session,
+        admin,
+        b"session",
+    )
+    await db.execute("SELECT set_config('app.user_id', '', true)")
+    await db.execute(
+        "INSERT INTO session_request_counts (session_id, window_start, count)"
+        " VALUES ($1, now(), 1)",
+        session,
+    )
     for table in sorted(SYSTEM_TABLES):
         assert await db.fetchval(f"SELECT count(*) FROM {table}") >= 1  # noqa: S608
     assert await db.execute("UPDATE invites SET revoked_at = now() WHERE id = $1", invite) == (

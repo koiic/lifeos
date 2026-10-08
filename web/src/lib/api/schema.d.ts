@@ -59,6 +59,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/register/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register Password
+         * @description Creates the account, inactive until `/auth/totp/confirm`; its session can only confirm.
+         */
+        post: operations["register_password_api_v1_auth_register_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/register/verify": {
         parameters: {
             query?: never;
@@ -87,6 +107,23 @@ export interface paths {
         put?: never;
         /** Signin Options */
         post: operations["signin_options_api_v1_auth_signin_options_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/signin/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign In Password */
+        post: operations["sign_in_password_api_v1_auth_signin_password_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -142,6 +179,26 @@ export interface paths {
         put?: never;
         /** Sign Out */
         post: operations["sign_out_api_v1_auth_signout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/totp/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Totp
+         * @description Activates the account; returns the recovery codes once.
+         */
+        post: operations["confirm_totp_api_v1_auth_totp_confirm_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -239,6 +296,35 @@ export interface components {
             credential: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * PasswordRegistered
+         * @description Add this to an authenticator app, then confirm a code (the account is inactive until
+         *     then; CR-014).
+         */
+        PasswordRegistered: {
+            /** Provisioning Uri */
+            provisioning_uri: string;
+        };
+        /** PasswordRegistration */
+        PasswordRegistration: {
+            /** Email */
+            email: string;
+            /** Name */
+            name: string;
+            /** Password */
+            password: string;
+            /** Token */
+            token: string;
+        };
+        /** PasswordSignIn */
+        PasswordSignIn: {
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+            /** Totp */
+            totp: string;
         };
         /** Problem */
         Problem: {
@@ -341,6 +427,16 @@ export interface components {
              * @constant
              */
             status: "ok";
+        };
+        /** TotpConfirm */
+        TotpConfirm: {
+            /** Code */
+            code: string;
+        };
+        /** TotpConfirmed */
+        TotpConfirmed: {
+            /** Recovery Codes */
+            recovery_codes: string[];
         };
         /**
          * WebAuthnOptions
@@ -529,6 +625,66 @@ export interface operations {
             };
         };
     };
+    register_password_api_v1_auth_register_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordRegistration"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordRegistered"];
+                };
+            };
+            /** @description The invite is not valid. Or: Missing X-LifeOS-Client header or wrong Origin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The email address already has an account. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request body is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request has invalid fields. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     register_api_v1_auth_register_verify_post: {
         parameters: {
             query?: never;
@@ -649,6 +805,75 @@ export interface operations {
             };
         };
     };
+    sign_in_password_api_v1_auth_signin_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordSignIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignedIn"];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing X-LifeOS-Client header or wrong Origin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request body is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request has invalid fields. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too many failed sign-ins (AUTH-7); see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     recovery_sign_in_api_v1_auth_signin_recovery_post: {
         parameters: {
             query?: never;
@@ -700,6 +925,15 @@ export interface operations {
             };
             /** @description The request has invalid fields. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too many failed sign-ins (AUTH-7); see Retry-After. */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -767,6 +1001,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description Too many failed sign-ins (AUTH-7); see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     sign_out_api_v1_auth_signout_post: {
@@ -796,6 +1039,84 @@ export interface operations {
             };
             /** @description The request body is too large. */
             413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    confirm_totp_api_v1_auth_totp_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TotpConfirm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TotpConfirmed"];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing X-LifeOS-Client header or wrong Origin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The authenticator app is already confirmed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request body is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request has invalid fields. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too many failed sign-ins (AUTH-7); see Retry-After. */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

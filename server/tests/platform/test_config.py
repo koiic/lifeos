@@ -191,3 +191,30 @@ def test_deployed_envs_ignore_a_master_key_in_the_environment(env: str, tmp_path
     (tmp_path / "database_url").write_text("postgresql://app:pw@postgres/lifeos")
     environ = {"ENV": env, "APP_ORIGIN": "https://a.example", "LIFEOS_KEK": "1 " + "A" * 43 + "="}
     assert load_settings(environ, tmp_path).lifeos_kek is None
+
+
+# ---------- T07: IP_HMAC_KEY (14.3, 12.5) ----------
+
+
+@pytest.mark.parametrize("env", DEPLOYED)
+def test_the_ip_hmac_key_comes_from_its_secret_file(env: str, tmp_path: Path) -> None:
+    (tmp_path / "database_url").write_text("postgresql://app:pw@postgres/lifeos")
+    (tmp_path / "ip_hmac_key").write_text("s3cret-ip-key\n")
+    settings = load_settings({"ENV": env, "APP_ORIGIN": "https://a.example"}, tmp_path)
+    assert settings.ip_hmac_key is not None
+    assert settings.ip_hmac_key.get_secret_value() == "s3cret-ip-key"
+    assert "s3cret" not in repr(settings)
+
+
+@pytest.mark.parametrize("env", DEPLOYED)
+def test_deployed_envs_ignore_an_ip_hmac_key_in_the_environment(env: str, tmp_path: Path) -> None:
+    """Secrets come from files outside local; the API refuses to start without it (test_main)."""
+    (tmp_path / "database_url").write_text("postgresql://app:pw@postgres/lifeos")
+    environ = {"ENV": env, "APP_ORIGIN": "https://a.example", "IP_HMAC_KEY": "from-env"}
+    assert load_settings(environ, tmp_path).ip_hmac_key is None
+
+
+def test_local_has_a_fixed_development_ip_hmac_key(tmp_path: Path) -> None:
+    first = load_settings(LOCAL, tmp_path).ip_hmac_key
+    assert first is not None
+    assert first == load_settings(LOCAL, tmp_path).ip_hmac_key

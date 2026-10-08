@@ -1,6 +1,7 @@
 """Auth API tests: the real app, the real database, a software authenticator and a test clock."""
 
 import hashlib
+import hmac
 import uuid
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
@@ -9,6 +10,7 @@ from typing import Any
 
 import asyncpg
 import httpx
+import pyotp
 import pytest
 from fastapi import APIRouter, Depends, FastAPI
 from fastapi.testclient import TestClient
@@ -26,6 +28,8 @@ ORIGIN = "https://app.test"
 RP_ID = "app.test"
 HEADERS = {"Origin": ORIGIN, "X-LifeOS-Client": "web"}
 DOMAIN = "@auth.test"
+IP_KEY = "test-ip-hmac-key"
+PASSWORD = "tangerine pelican orbit 42"
 
 
 class Clock:
@@ -47,9 +51,50 @@ class AuthEnv:
     db: asyncpg.Connection
     admin_id: uuid.UUID
     authenticator: SoftAuthenticator
+    # The client address the proxy reports (CF-Connecting-IP, CR-015); tests change it.
+    ip: str = "203.0.113.10"
 
     def post(self, path: str, json: object | None = None) -> httpx.Response:
-        return self.client.post(f"/api/v1{path}", json=json, headers=HEADERS)
+        return self.client.post(
+            f"/api/v1{path}", json=json, headers=HEADERS | {"CF-Connecting-IP": self.ip}
+        )
+
+    def ip_hash(self, ip: str | None = None) -> bytes:
+        return hmac.new(IP_KEY.encode(), (ip or self.ip).encode(), hashlib.sha256).digest()
+
+    def register_password(
+        self,
+        token: str,
+        password: str = PASSWORD,
+        name: str = "Zee",
+        email: str = f"zee{DOMAIN}",
+    ) -> httpx.Response:
+        return self.post(
+            "/auth/register/password",
+            {"token": token, "name": name, "email": email, "password": password},
+        )
+
+    def password_account(self, response: httpx.Response) -> pyotp.TOTP:
+        """The TOTP generator for a password registration response."""
+        assert response.status_code == 201, response.text
+        totp = pyotp.parse_uri(response.json()["provisioning_uri"])
+        assert isinstance(totp, pyotp.TOTP)
+        return totp
+
+    def code(self, totp: pyotp.TOTP, offset_s: int = 0) -> str:
+        return totp.at(self.clock.now + timedelta(seconds=offset_s))
+
+    def wrong_code(self, totp: pyotp.TOTP) -> str:
+        """A 6-digit code that is not accepted now (none of the ±1-step codes)."""
+        accepted = {self.code(totp, k * 30) for k in (-1, 0, 1)}
+        return next(c for c in ("000000", "111111", "222222", "333333") if c not in accepted)
+
+    def signin_password(
+        self, code: str, password: str = PASSWORD, email: str = f"zee{DOMAIN}"
+    ) -> httpx.Response:
+        return self.post(
+            "/auth/signin/password", {"email": email, "password": password, "totp": code}
+        )
 
     async def invite(
         self,
@@ -126,7 +171,7 @@ class AuthEnv:
         self.client.cookies.set("lo_session", token, domain=RP_ID)
 
     def whoami(self) -> httpx.Response:
-        return self.client.get("/api/v1/_test/whoami")
+        return self.client.get("/api/v1/_test/whoami", headers={"CF-Connecting-IP": self.ip})
 
 
 def whoami_router() -> APIRouter:
@@ -141,6 +186,7 @@ def whoami_router() -> APIRouter:
 
 async def clean(db: asyncpg.Connection) -> None:
     await db.execute("DELETE FROM auth_challenges")
+    await db.execute("DELETE FROM auth_events")
     await db.execute("DELETE FROM invites")
     await db.execute("DELETE FROM users WHERE email LIKE $1", f"%{DOMAIN}")
 
@@ -157,7 +203,13 @@ async def env(migrated: str) -> AsyncIterator[AuthEnv]:
         f"admin{DOMAIN}",
         b"k",
     )
-    settings = Settings(env="local", app_origin=ORIGIN, database_url=migrated, webauthn_rp_id=RP_ID)
+    settings = Settings(
+        env="local",
+        app_origin=ORIGIN,
+        database_url=migrated,
+        webauthn_rp_id=RP_ID,
+        ip_hmac_key=IP_KEY,
+    )
     app = create_app(settings)
     app.include_router(whoami_router())
     clock = Clock()

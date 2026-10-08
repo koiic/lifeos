@@ -52,6 +52,16 @@ def spec_tables() -> dict[str, set[str]]:
 
 
 SPEC_TABLES = spec_tables()
+# Tables added by approved change requests whose spec re-sync is pending. Once the spec carries a
+# table, the test below fails until it is removed from here.
+PENDING_CR_TABLES = {
+    "session_request_counts": {"session_id", "window_start", "count"},  # CR-016
+}
+EXPECTED_TABLES = SPEC_TABLES | PENDING_CR_TABLES
+
+
+def test_pending_cr_tables_are_not_yet_in_the_spec() -> None:
+    assert not set(PENDING_CR_TABLES) & set(SPEC_TABLES)
 
 
 def test_the_spec_defines_28_tables() -> None:
@@ -64,17 +74,17 @@ async def test_the_database_has_exactly_the_spec_tables(db: asyncpg.Connection) 
         " WHERE table_schema = 'public' AND table_type = 'BASE TABLE'"
         " AND table_name <> 'alembic_version'"
     )
-    assert {row["table_name"] for row in rows} == set(SPEC_TABLES)
+    assert {row["table_name"] for row in rows} == set(EXPECTED_TABLES)
 
 
-@pytest.mark.parametrize("table", sorted(SPEC_TABLES))
+@pytest.mark.parametrize("table", sorted(EXPECTED_TABLES))
 async def test_each_table_has_exactly_the_spec_columns(db: asyncpg.Connection, table: str) -> None:
     rows = await db.fetch(
         "SELECT column_name FROM information_schema.columns"
         " WHERE table_schema = 'public' AND table_name = $1",
         table,
     )
-    assert {row["column_name"] for row in rows} == SPEC_TABLES[table]
+    assert {row["column_name"] for row in rows} == EXPECTED_TABLES[table]
 
 
 async def test_citext_is_installed(db: asyncpg.Connection) -> None:

@@ -19,6 +19,7 @@ SECRETS_DIR = Path("/run/secrets")
 LOCAL_APP_ORIGIN = "http://localhost:5173"
 # Matches infra/docker-compose.dev.yml; only ever used when ENV=local.
 LOCAL_DATABASE_URL = "postgresql://lifeos:lifeos@127.0.0.1:54320/lifeos"
+LOCAL_IP_HMAC_KEY = "lifeos-local-development-ip-hmac-key"
 ORIGIN = re.compile(r"(?P<scheme>https?)://[A-Za-z0-9.-]+(:\d+)?")
 HOSTNAME = re.compile(r"[a-z0-9-]+(\.[a-z0-9-]+)*")
 
@@ -41,6 +42,8 @@ class Settings(BaseModel):
     webauthn_rp_id: str
     # Master key file content (12.2, CR-011); None only in ENV=local (fixed development key).
     lifeos_kek: SecretStr | None = None
+    # HMAC key for client IPs (7.2 ip_hash, 12.5, 14.3); None only in ENV=local (fixed dev key).
+    ip_hmac_key: SecretStr | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -106,6 +109,9 @@ def load_settings(
         raise ConfigError("WEBAUTHN_RP_ID must be the APP_ORIGIN host or a parent domain of it")
 
     kek = read_secret("lifeos_kek", secrets_dir)
+    ip_key = read_secret("ip_hmac_key", secrets_dir)
+    if ip_key is None and local:
+        ip_key = environ.get("IP_HMAC_KEY", LOCAL_IP_HMAC_KEY)
 
     return Settings(
         env=cast(Env, env),
@@ -115,4 +121,5 @@ def load_settings(
         database_jobs_url=SecretStr(jobs_url) if jobs_url else None,
         webauthn_rp_id=rp_id,
         lifeos_kek=SecretStr(kek) if kek else None,
+        ip_hmac_key=SecretStr(ip_key) if ip_key else None,
     )

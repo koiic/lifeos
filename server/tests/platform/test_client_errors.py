@@ -7,7 +7,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.platform.client_errors import FixedWindowLimiter
+from app.platform.client_errors import FixedWindowLimiter, KeyedLimiter
 from tests.platform.conftest import GOOD_HEADERS, read_logs
 
 URL = "/api/v1/client-errors"
@@ -26,14 +26,15 @@ class FakeClock:
 def clock(app: FastAPI) -> FakeClock:
     """Drive the app's own limiter (as configured in create_app) with a fake clock."""
     fake = FakeClock()
-    limiter: FixedWindowLimiter = app.state.client_error_limiter
+    limiter: KeyedLimiter = app.state.client_error_limiter
     limiter.clock = fake
-    limiter.window_start = fake()
+    limiter.total.clock = fake
+    limiter.total.window_start = fake()
     return fake
 
 
 def test_the_app_limits_reports_to_20_per_minute(app: FastAPI) -> None:
-    limiter: FixedWindowLimiter = app.state.client_error_limiter
+    limiter: KeyedLimiter = app.state.client_error_limiter
     assert (limiter.limit, limiter.window_s) == (20, 60)
 
 
@@ -197,3 +198,41 @@ def test_chunked_oversize_bodies_to_model_routes_are_413(client: TestClient) -> 
     )
     assert response.status_code == 413
     assert response.headers["content-type"] == "application/problem+json"
+
+
+def test_the_limit_is_per_client_ip(client: TestClient, clock: FakeClock) -> None:
+    """T07 (T10 follow-up): keyed on the HMACed client IP."""
+    first = GOOD_HEADERS | {"CF-Connecting-IP": "203.0.113.1"}
+    for _ in range(20):
+        assert client.post(URL, json=REPORT, headers=first).status_code == 204
+    assert client.post(URL, json=REPORT, headers=first).status_code == 429
+    second = GOOD_HEADERS | {"CF-Connecting-IP": "203.0.113.2"}
+    assert client.post(URL, json=REPORT, headers=second).status_code == 204
+
+
+def test_the_keyed_limiter_forgets_ended_windows() -> None:
+    clock = FakeClock()
+    limiter = KeyedLimiter(limit=1, window_s=60, clock=clock)
+    limiter.MAX_KEYS = 3
+    for key in (b"a", b"b", b"c"):
+        assert limiter.hit(key) is None
+    clock.now += 61
+    assert limiter.hit(b"d") is None
+    assert set(limiter._limiters) == {b"d"}
+    assert limiter.hit(b"d") == 60
+
+
+def test_reports_from_all_ips_share_a_ceiling() -> None:
+    clock = FakeClock()
+    limiter = KeyedLimiter(limit=20, window_s=60, clock=clock, total=3)
+    assert [limiter.hit(bytes([n])) for n in range(4)] == [None, None, None, 60]
+
+
+def test_new_keys_are_refused_while_the_table_is_full_of_live_ones() -> None:
+    clock = FakeClock()
+    limiter = KeyedLimiter(limit=1, window_s=60, clock=clock, total=100)
+    limiter.MAX_KEYS = 2
+    assert limiter.hit(b"a") is None
+    assert limiter.hit(b"b") is None
+    assert limiter.hit(b"c") == 60
+    assert set(limiter._limiters) == {b"a", b"b"}

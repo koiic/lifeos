@@ -3,9 +3,12 @@
 import re
 import unicodedata
 import uuid
+from functools import cache
+from pathlib import Path
 from typing import Annotated, Any, Literal
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, StringConstraints
+from pydantic_core import PydanticCustomError
 
 # A practical shape check (one @, a dot in the domain, no spaces); the invite proves ownership.
 EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
@@ -105,3 +108,65 @@ class Recovered(BaseModel):
 
 class PasskeyVerify(Strict):
     credential: Credential
+
+
+# ---------- password + TOTP (12.3, 9.2, CR-014) ----------
+
+PASSWORD_MIN = 12
+PASSWORD_MAX = 256  # bounds the Argon2id input; far above any real passphrase
+COMMON_PASSWORDS_FILE = Path(__file__).parent / "data" / "common_passwords.txt"
+
+
+@cache
+def common_passwords() -> frozenset[str]:
+    lines = COMMON_PASSWORDS_FILE.read_text(encoding="utf-8").splitlines()
+    return frozenset(line for line in lines if line and not line.startswith("#"))
+
+
+def nfc(value: str) -> str:
+    """Passwords are NFC-normalised (9.4), so the same characters typed on different devices
+    match; they are not trimmed or otherwise changed (every character counts)."""
+    return unicodedata.normalize("NFC", value)
+
+
+def check_password(value: str) -> str:
+    """12.3: at least 12 characters and not on the local common-password list. Messages are
+    fixed, so a refused password is never echoed."""
+    value = nfc(value)
+    if len(value) < PASSWORD_MIN:
+        raise PydanticCustomError("password_too_short", "Use at least 12 characters.")
+    if value.strip().lower() in common_passwords():
+        raise PydanticCustomError("password_too_common", "This password is too common.")
+    return value
+
+
+NewPassword = Annotated[
+    str, StringConstraints(max_length=PASSWORD_MAX), AfterValidator(check_password)
+]
+TotpCode = Annotated[str, StringConstraints(max_length=16)]
+
+
+class PasswordRegistration(Registration):
+    password: NewPassword
+
+
+class PasswordRegistered(BaseModel):
+    """Add this to an authenticator app, then confirm a code (the account is inactive until
+    then; CR-014)."""
+
+    provisioning_uri: str
+
+
+class TotpConfirm(Strict):
+    code: TotpCode
+
+
+class TotpConfirmed(BaseModel):
+    # Shown once (as at passkey registration); only argon2id hashes are stored.
+    recovery_codes: list[str]
+
+
+class PasswordSignIn(Strict):
+    email: Email
+    password: Annotated[str, StringConstraints(max_length=PASSWORD_MAX), AfterValidator(nfc)]
+    totp: TotpCode

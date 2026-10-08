@@ -5,6 +5,7 @@ Pre-auth lookups go through the CR-003 SECURITY DEFINER functions; everything el
 """
 
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -362,11 +363,13 @@ async def insert_session(
     token_hash: bytes,
     now: datetime,
     expires_at: datetime,
+    ip_hash: bytes,
 ) -> None:
     await tx.execute(
         text(
-            "INSERT INTO sessions (id, user_id, token_hash, created_at, last_seen_at, expires_at)"
-            " VALUES (:id, :user_id, :hash, :now, :now, :expires_at)"
+            "INSERT INTO sessions"
+            " (id, user_id, token_hash, created_at, last_seen_at, expires_at, ip_hash)"
+            " VALUES (:id, :user_id, :hash, :now, :now, :expires_at, :ip_hash)"
         ),
         {
             "id": session_id,
@@ -374,6 +377,7 @@ async def insert_session(
             "hash": token_hash,
             "now": now,
             "expires_at": expires_at,
+            "ip_hash": ip_hash,
         },
     )
 
@@ -402,3 +406,187 @@ async def revoke_session(tx: Transaction, session_id: uuid.UUID, now: datetime) 
         text("UPDATE sessions SET revoked_at = :now WHERE id = :id AND revoked_at IS NULL"),
         {"id": session_id, "now": now},
     )
+
+
+# ---------- password + TOTP (user_transaction) ----------
+
+
+@dataclass(frozen=True)
+class PasswordCredentials:
+    password_hash: str
+    totp_secret_enc: bytes | None
+    totp_enabled: bool
+
+
+@dataclass(frozen=True)
+class UserKey:
+    dek_wrapped: bytes
+    kek_version: int
+
+
+async def insert_password_credentials(
+    tx: Transaction,
+    user_id: uuid.UUID,
+    password_hash: str,
+    totp_secret_enc: bytes,
+) -> None:
+    await tx.execute(
+        text(
+            "INSERT INTO password_credentials (user_id, password_hash, totp_secret_enc)"
+            " VALUES (:user_id, :hash, :secret)"
+        ),
+        {"user_id": user_id, "hash": password_hash, "secret": totp_secret_enc},
+    )
+
+
+async def password_credentials(tx: Transaction, user_id: uuid.UUID) -> PasswordCredentials | None:
+    row = (
+        await tx.execute(
+            text(
+                "SELECT password_hash, totp_secret_enc, totp_enabled FROM password_credentials"
+                " WHERE user_id = :user_id"
+            ),
+            {"user_id": user_id},
+        )
+    ).one_or_none()
+    if row is None:
+        return None
+    return PasswordCredentials(row.password_hash, row.totp_secret_enc, row.totp_enabled)
+
+
+async def enable_totp(tx: Transaction, user_id: uuid.UUID) -> bool:
+    """Confirm TOTP; False when it already was."""
+    row = (
+        await tx.execute(
+            text(
+                "UPDATE password_credentials SET totp_enabled = true"
+                " WHERE user_id = :user_id AND NOT totp_enabled RETURNING user_id"
+            ),
+            {"user_id": user_id},
+        )
+    ).one_or_none()
+    return row is not None
+
+
+async def user_key(tx: Transaction, user_id: uuid.UUID) -> UserKey | None:
+    row = (
+        await tx.execute(
+            text("SELECT dek_wrapped, kek_version FROM users WHERE id = :id"), {"id": user_id}
+        )
+    ).one_or_none()
+    return UserKey(row.dek_wrapped, row.kek_version) if row else None
+
+
+async def is_activated(tx: Transaction, user_id: uuid.UUID) -> bool:
+    """CR-014: an account is active once it has a passkey or a confirmed TOTP."""
+    active: bool = (
+        await tx.execute(
+            text(
+                "SELECT EXISTS (SELECT 1 FROM webauthn_credentials WHERE user_id = :id)"
+                " OR EXISTS (SELECT 1 FROM password_credentials"
+                " WHERE user_id = :id AND totp_enabled)"
+            ),
+            {"id": user_id},
+        )
+    ).scalar_one()
+    return active
+
+
+# ---------- auth events (system table, append-only for the API: CR-010) ----------
+
+
+async def insert_auth_event(
+    tx: Transaction,
+    *,
+    user_id: uuid.UUID | None,
+    kind: str,
+    success: bool,
+    ip_hash: bytes,
+    now: datetime,
+) -> None:
+    await tx.execute(
+        text(
+            "INSERT INTO auth_events (user_id, kind, success, ip_hash, at)"
+            " VALUES (:user_id, :kind, :success, :ip_hash, :now)"
+        ),
+        {"user_id": user_id, "kind": kind, "success": success, "ip_hash": ip_hash, "now": now},
+    )
+
+
+FAILURES_BY_USER = (
+    "SELECT at FROM auth_events WHERE user_id = :value AND NOT success"
+    " AND kind = ANY(:kinds) AND at > :since ORDER BY at DESC LIMIT :limit"
+)
+FAILURES_BY_IP = (
+    "SELECT at FROM auth_events WHERE ip_hash = :value AND NOT success"
+    " AND kind = ANY(:kinds) AND at > :since ORDER BY at DESC LIMIT :limit"
+)
+
+
+async def recent_failures(
+    tx: Transaction,
+    *,
+    kinds: Sequence[str],
+    since: datetime,
+    limit: int,
+    user_id: uuid.UUID | None = None,
+    ip_hash: bytes | None = None,
+) -> list[datetime]:
+    """The newest failed attempts after `since`, for one account or one IP, newest first."""
+    query = FAILURES_BY_USER if user_id is not None else FAILURES_BY_IP
+    value = user_id if user_id is not None else ip_hash
+    rows = await tx.execute(
+        text(query), {"value": value, "kinds": list(kinds), "since": since, "limit": limit}
+    )
+    return [row.at for row in rows]
+
+
+async def last_totp_success(tx: Transaction, user_id: uuid.UUID) -> datetime | None:
+    """When a TOTP code last succeeded for this account (replay protection, 12.3)."""
+    at: datetime | None = (
+        await tx.execute(
+            text(
+                "SELECT max(at) FROM auth_events WHERE user_id = :user_id AND success"
+                " AND kind IN ('totp', 'signin_password')"
+            ),
+            {"user_id": user_id},
+        )
+    ).scalar_one()
+    return at
+
+
+# ---------- concurrency and per-session counts ----------
+
+
+async def try_advisory_lock(tx: Transaction, key: str) -> bool:
+    """A transaction-scoped Postgres advisory lock on `key` (shared by every API worker);
+    False when another transaction holds it."""
+    locked: bool = (
+        await tx.execute(
+            text("SELECT pg_try_advisory_xact_lock(hashtextextended(:key, 0))"), {"key": key}
+        )
+    ).scalar_one()
+    return locked
+
+
+async def count_session_request(
+    tx: Transaction, session_id: uuid.UUID, now: datetime, window_over: datetime
+) -> tuple[datetime, int]:
+    """Count one request in the session's current window (a new window when the stored one
+    started at or before `window_over`); returns the window start and the count so far."""
+    row = (
+        await tx.execute(
+            text(
+                "INSERT INTO session_request_counts AS c (session_id, window_start, count)"
+                " VALUES (:id, :now, 1)"
+                " ON CONFLICT (session_id) DO UPDATE SET"
+                " window_start = CASE WHEN c.window_start <= :over THEN :now"
+                " ELSE c.window_start END,"
+                " count = CASE WHEN c.window_start <= :over THEN 1 ELSE c.count + 1 END"
+                " RETURNING window_start, count"
+            ),
+            {"id": session_id, "now": now, "over": window_over},
+        )
+    ).one()
+    count: int = row._mapping["count"]  # `row.count` is the Row method
+    return row.window_start, count

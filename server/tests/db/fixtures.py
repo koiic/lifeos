@@ -189,4 +189,11 @@ async def _dose_for(conn: asyncpg.Connection, user: uuid.UUID, medication: uuid.
 # cross-user insert test creates the parent as superuser, so the RLS error comes from the target.
 WITH_PARENT = {"medication_doses": (_medication, _dose_for)}
 
-SYSTEM_TABLES = {"invites", "auth_challenges", "auth_events", "audit_log", "pending_deletions"}
+SYSTEM_TABLES = {
+    "invites",
+    "auth_challenges",
+    "auth_events",
+    "audit_log",
+    "pending_deletions",
+    "session_request_counts",  # CR-016
+}
