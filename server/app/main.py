@@ -7,13 +7,14 @@ import structlog
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from app.admin import api as admin_api
 from app.auth import api as auth_api
-from app.auth.service import AuthService
+from app.auth.service import AccountService, AuthService
 from app.platform import client_errors, probes
 from app.platform.client_ip import ClientIpMissing, ClientIpRequiredMiddleware, ip_hmac_key
 from app.platform.config import Settings, load_settings
 from app.platform.crypto import load_keyring
-from app.platform.db import APP_ROLE, create_engine, verify_role
+from app.platform.db import ADMIN_WRITE_ROLE, APP_ROLE, create_engine, verify_role
 from app.platform.errors import install_error_handlers, install_problem_openapi, problem_response
 from app.platform.logging import configure_logging
 from app.platform.middleware import (
@@ -39,8 +40,18 @@ def create_app(settings: Settings) -> FastAPI:
         app.state.auth = AuthService(
             app.state.engine, keyring, settings.webauthn_rp_id, settings.app_origin
         )
+        admin_engine = None
+        if settings.database_admin_write_url is not None:
+            admin_engine = create_engine(
+                settings.database_admin_write_url.get_secret_value(), role=ADMIN_WRITE_ROLE
+            )
+            if settings.env != "local":
+                await verify_role(admin_engine, ADMIN_WRITE_ROLE)
+        app.state.account = AccountService(app.state.auth, admin_engine)
         yield
         await app.state.engine.dispose()
+        if admin_engine is not None:
+            await admin_engine.dispose()
 
     app = FastAPI(
         title="Life OS",
@@ -78,6 +89,7 @@ def create_app(settings: Settings) -> FastAPI:
     app.include_router(probes.router)
     app.include_router(client_errors.router)
     app.include_router(auth_api.router)
+    app.include_router(admin_api.router)
     return app
 
 

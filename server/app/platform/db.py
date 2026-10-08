@@ -20,6 +20,7 @@ from app.platform.config import ConfigError
 
 APP_ROLE = "lifeos_app"
 JOBS_ROLE = "lifeos_jobs"
+ADMIN_WRITE_ROLE = "lifeos_admin"  # CR-022
 
 # Names for services, which never import SQLAlchemy themselves (plan 4.2).
 type Database = AsyncEngine

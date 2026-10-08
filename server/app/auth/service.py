@@ -49,6 +49,7 @@ from webauthn.helpers.structs import (
     AttestationConveyancePreference,
     AuthenticatorSelectionCriteria,
     CredentialDeviceType,
+    PublicKeyCredentialDescriptor,
     ResidentKeyRequirement,
     UserVerificationRequirement,
 )
@@ -74,6 +75,7 @@ from app.platform.crypto import (
 )
 from app.platform.db import Database, Transaction, system_transaction, user_transaction
 from app.platform.ids import new_id
+from app.platform.outbox import publish
 
 RP_NAME = "Life OS"
 INVITE_TTL = timedelta(days=7)  # AUTH-1
@@ -113,6 +115,12 @@ COUNTED_KINDS = ("signin_passkey", "signin_password", "recovery", "totp")
 # hold (each holds its gate transaction while it verifies).
 CONCURRENT_ATTEMPTS = 4
 FAILURES_READ = 1000  # newest failures read per lockout check (more is an attack in progress)
+
+# 12.3 / 9.2 note: "recent auth" = a passkey or password verification within 5 minutes (CR-017).
+RECENT_AUTH = timedelta(minutes=5)
+PIN_TRIES = 5  # 9.2 app-lock unlock: "5 tries then full sign-in required"
+RECOVERY_INVITE_TTL = timedelta(hours=24)  # AUTH-8
+SECURITY_NOTICE = "auth.security_notice"  # outbox topic; notify delivers 10.7 "Account notice"
 
 # 9.1: all other endpoints, 300 requests/min per session (shared by the workers, CR-016).
 SESSION_LIMIT = 300
@@ -174,6 +182,47 @@ class Locked(AuthError):
         self.retry_after = retry_after
 
 
+class ReauthRequired(AuthError):
+    """12.3: a sensitive action without a passkey or password verification in 5 minutes."""
+
+    status = 403
+    detail = "Confirm it's you to continue."
+
+
+class LastSignInMethod(AuthError):
+    status = 409
+    detail = "This is your last way to sign in."
+
+
+class NotFound(AuthError):
+    status = 404
+    detail = "Not found."
+
+
+class AdminWritesUnavailable(AuthError):
+    """No `database_admin_write_url` configured (CR-022)."""
+
+    status = 503
+    detail = "Admin changes are not available."
+
+
+class NoPin(AuthError):
+    status = 409
+    detail = "No app-lock PIN is set."
+
+
+class PinFailed(AuthError):
+    status = 401
+    detail = "Wrong PIN."
+
+
+class PinLockedOut(AuthError):
+    """AUTH-6 / 9.2: the fifth wrong PIN ends the session ("full sign-in required")."""
+
+    status = 401
+    detail = "Too many wrong PINs. Sign in again."
+
+
 class TooManyRequests(AuthError):
     """9.1: more than 300 requests in a minute on one session."""
 
@@ -198,9 +247,19 @@ class Attempt:
 
 
 @dataclass(frozen=True)
+class ClientInfo:
+    """Who is asking: the client IP's HMAC and a device label from the user agent."""
+
+    ip_hash: bytes
+    device_label: str
+
+
+@dataclass(frozen=True)
 class SessionContext:
     user_id: uuid.UUID
     session_id: uuid.UUID
+    created_at: datetime | None = None
+    reauth_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -545,9 +604,9 @@ class AuthService:
             raise RegistrationFailed from None
 
     async def register(
-        self, data: Registration, credential: dict[str, Any], now: datetime, ip_hash: bytes
+        self, data: Registration, credential: dict[str, Any], now: datetime, client: ClientInfo
     ) -> tuple[Registered, NewSession]:
-        async with self._attempt("register", ip_hash, now) as attempt:
+        async with self._attempt("register", client.ip_hash, now) as attempt:
             challenge = _client_challenge(credential)
             if challenge is None:
                 raise RegistrationFailed
@@ -567,7 +626,7 @@ class AuthService:
                 await self._create_account(tx, user_id, data, invite, now)
                 await self._store_passkey(tx, user_id, verified, credential, now)
                 await repo.insert_recovery_codes(tx, user_id, hashes)
-                session = await self._start_session(tx, user_id, now, ip_hash)
+                session = await self._start_session(tx, user_id, now, client)
             attempt.user_id = user_id
         return Registered(user_id=user_id, display_name=data.name, recovery_codes=codes), session
 
@@ -606,11 +665,11 @@ class AuthService:
     # ----- password + TOTP fallback (AUTH-3, CR-014) -----
 
     async def register_password(
-        self, data: PasswordRegistration, now: datetime, ip_hash: bytes
+        self, data: PasswordRegistration, now: datetime, client: ClientInfo
     ) -> tuple[PasswordRegistered, NewSession]:
         """Create an inactive account with a password and an unconfirmed TOTP secret; its session
         can only confirm the TOTP (CR-014)."""
-        async with self._attempt("register", ip_hash, now) as attempt:
+        async with self._attempt("register", client.ip_hash, now) as attempt:
             async with system_transaction(self._db) as tx:
                 invite = await self._invite_for(tx, data, now)
             user_id = new_id()
@@ -624,7 +683,7 @@ class AuthService:
                     password_hash,
                     encrypt(dek, secret.encode(), _totp_secret_aad(user_id)),
                 )
-                session = await self._start_session(tx, user_id, now, ip_hash)
+                session = await self._start_session(tx, user_id, now, client)
             attempt.user_id = user_id
         uri = pyotp.TOTP(secret).provisioning_uri(name=data.email, issuer_name=TOTP_ISSUER)
         return PasswordRegistered(provisioning_uri=uri), session
@@ -651,7 +710,7 @@ class AuthService:
         return last is None or step > pyotp.TOTP(secret).timecode(last) + 1
 
     async def confirm_totp(
-        self, session: SessionContext, code: str, now: datetime, ip_hash: bytes
+        self, session: SessionContext, code: str, now: datetime, client: ClientInfo
     ) -> list[str]:
         """Activate a password account: a valid code turns TOTP on; returns the recovery codes
         once. An already confirmed account gets 409 before any attempt is counted (nothing is
@@ -660,7 +719,7 @@ class AuthService:
             credentials = await repo.password_credentials(tx, session.user_id)
         if credentials is None or credentials.totp_enabled:
             raise AlreadyConfirmed
-        async with self._attempt("totp", ip_hash, now) as attempt:
+        async with self._attempt("totp", client.ip_hash, now) as attempt:
             attempt.user_id = session.user_id
             await self._guard(attempt)
             await self._guard(attempt, session.user_id)
@@ -681,9 +740,9 @@ class AuthService:
         return codes
 
     async def sign_in_password(
-        self, email: str, password: str, code: str, now: datetime, ip_hash: bytes
+        self, email: str, password: str, code: str, now: datetime, client: ClientInfo
     ) -> tuple[SignedIn, NewSession]:
-        async with self._attempt("signin_password", ip_hash, now) as attempt:
+        async with self._attempt("signin_password", client.ip_hash, now) as attempt:
             await self._guard(attempt)
             async with system_transaction(self._db) as tx:
                 user_id = await repo.find_user_id_by_email(tx, email)
@@ -706,7 +765,7 @@ class AuthService:
             async with user_transaction(self._db, user_id) as tx:
                 if not await self._check_totp(tx, user_id, credentials.totp_secret_enc, code, now):
                     raise SignInFailed
-                session = await self._start_session(tx, user_id, now, ip_hash)
+                session = await self._start_session(tx, user_id, now, client)
         return SignedIn(user_id=user_id, display_name=name), session
 
     # ----- sign-in -----
@@ -731,11 +790,11 @@ class AuthService:
         return _options_json(options)
 
     async def sign_in(
-        self, credential: dict[str, Any], now: datetime, ip_hash: bytes
+        self, credential: dict[str, Any], now: datetime, client: ClientInfo
     ) -> tuple[SignedIn, NewSession]:
         """Passkey sign-in. Only the IP lockout applies: a passkey cannot be guessed, and an
         account lockout here would let anyone who knows her email lock her out (T07)."""
-        async with self._attempt("signin_passkey", ip_hash, now) as attempt:
+        async with self._attempt("signin_passkey", client.ip_hash, now) as attempt:
             await self._guard(attempt)
             self._refuse_if_locked(attempt)
             challenge = _client_challenge(credential)
@@ -772,13 +831,15 @@ class AuthService:
                     tx, credential_id, verified.new_sign_count, verified.credential_backed_up, now
                 ):
                     raise SignInFailed
-                session = await self._start_session(tx, stored.user_id, now, ip_hash)
+                session = await self._start_session(tx, stored.user_id, now, client)
         return SignedIn(user_id=stored.user_id, display_name=name), session
 
-    async def recover(self, email: str, code: str, now: datetime, ip_hash: bytes) -> dict[str, Any]:
+    async def recover(
+        self, email: str, code: str, now: datetime, client: ClientInfo
+    ) -> dict[str, Any]:
         """Spend a recovery code; returns creation options for a new passkey. No session is
         issued until that passkey is verified (CR-013: "forces new passkey setup")."""
-        async with self._attempt("recovery", ip_hash, now) as attempt:
+        async with self._attempt("recovery", client.ip_hash, now) as attempt:
             await self._guard(attempt)
             typed = _normal_code(code)
             async with system_transaction(self._db) as tx:
@@ -815,18 +876,20 @@ class AuthService:
         return self._creation_options(subject, account.email, account.display_name, challenge)
 
     async def add_recovery_passkey(
-        self, credential: dict[str, Any], now: datetime, ip_hash: bytes
+        self, credential: dict[str, Any], now: datetime, client: ClientInfo
     ) -> tuple[SignedIn, NewSession]:
         """Finish a recovery sign-in: verify the new passkey for the user the recovery
         challenge names, store it and only then start a session (CR-013). Logged as a passkey
         registration."""
-        async with self._attempt("register", ip_hash, now) as attempt:
+        async with self._attempt("register", client.ip_hash, now) as attempt:
             challenge = _client_challenge(credential)
             if challenge is None:
                 raise RegistrationFailed
             async with system_transaction(self._db) as tx:
                 spent = await repo.consume_challenge(tx, "add_passkey", challenge, now)
-            if spent is None or spent.user_id is None:
+            # Recovery-invite challenges (CR-018) carry their invite and finish only at
+            # /auth/recover/verify.
+            if spent is None or spent.user_id is None or spent.invite_id is not None:
                 raise RegistrationFailed
             attempt.user_id = spent.user_id
             verified = self._verify_new_passkey(credential, challenge)
@@ -835,13 +898,13 @@ class AuthService:
                 if account is None:
                     raise RegistrationFailed
                 await self._store_passkey(tx, spent.user_id, verified, credential, now)
-                session = await self._start_session(tx, spent.user_id, now, ip_hash)
+                session = await self._start_session(tx, spent.user_id, now, client)
         return SignedIn(user_id=spent.user_id, display_name=account.display_name), session
 
     # ----- sessions -----
 
     async def _start_session(
-        self, tx: Transaction, user_id: uuid.UUID, now: datetime, ip_hash: bytes
+        self, tx: Transaction, user_id: uuid.UUID, now: datetime, client: ClientInfo
     ) -> NewSession:
         token, raw = _new_token()
         await repo.insert_session(
@@ -851,7 +914,8 @@ class AuthService:
             token_hash=_sha256(raw),
             now=now,
             expires_at=now + SESSION_IDLE,
-            ip_hash=ip_hash,
+            ip_hash=client.ip_hash,
+            device_label=client.device_label,
         )
         return NewSession(token, int(SESSION_IDLE.total_seconds()))
 
@@ -893,7 +957,8 @@ class AuthService:
                 expires_at = min(now + SESSION_IDLE, times.created_at + SESSION_ABSOLUTE)
                 await repo.slide_session(tx, ref.id, now, expires_at)
                 refreshed = NewSession(token, int((expires_at - now).total_seconds()))
-        return SessionContext(ref.user_id, ref.id), refreshed
+        context = SessionContext(ref.user_id, ref.id, times.created_at, times.reauth_at)
+        return context, refreshed
 
     async def sign_out(self, token: str, now: datetime, ip_hash: bytes) -> None:
         """End the session the token names (logged as `revoke`); nothing to do otherwise."""
@@ -902,6 +967,7 @@ class AuthService:
             return
         async with user_transaction(self._db, ref.user_id) as tx:
             await repo.revoke_session(tx, ref.id, now)
+            await repo.spend_pending_challenges(tx, ref.user_id, now)
         await self._log("revoke", True, ref.user_id, ip_hash, now)
 
 
@@ -910,3 +976,380 @@ async def _new_recovery_codes() -> tuple[list[str], list[str]]:
     codes = [_new_code() for _ in range(RECOVERY_CODES)]
     hashes = await asyncio.to_thread(lambda: [CODE_HASHER.hash(_normal_code(c)) for c in codes])
     return codes, hashes
+
+
+def _b64url(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
+
+
+class AccountService:
+    """T08: session and passkey management, re-authentication, recovery codes, app lock and
+    recovery invites. Shares the AuthService's database, keyring and WebAuthn settings."""
+
+    def __init__(self, auth: AuthService, admin_db: Database | None = None) -> None:
+        self._auth = auth
+        self._db = auth._db
+        # lifeos_admin (CR-022): admin endpoints that write use only this connection.
+        self._admin_db = admin_db
+
+    # ----- recent auth (CR-017) -----
+
+    @staticmethod
+    def require_recent_auth(session: SessionContext, now: datetime) -> None:
+        if session.reauth_at is None or now - session.reauth_at >= RECENT_AUTH:
+            raise ReauthRequired
+
+    async def reauth_options(
+        self, session: SessionContext, purpose: str, now: datetime
+    ) -> dict[str, Any]:
+        """Request options for her own passkeys (purpose `reauth`, or `unlock` for the app lock,
+        11.6); the challenge is bound to her account."""
+        challenge = secrets.token_bytes(CHALLENGE_BYTES)
+        async with user_transaction(self._db, session.user_id) as tx:
+            mine = await repo.passkeys(tx, session.user_id)
+            await repo.insert_challenge(
+                tx,
+                challenge_id=new_id(),
+                purpose=purpose,
+                challenge=challenge,
+                user_id=session.user_id,
+                now=now,
+                expires_at=now + CHALLENGE_TTL,
+            )
+        options = generate_authentication_options(
+            rp_id=self._auth._rp_id,
+            challenge=challenge,
+            timeout=int(CHALLENGE_TTL.total_seconds() * 1000),
+            allow_credentials=[PublicKeyCredentialDescriptor(id=p.credential_id) for p in mine],
+            user_verification=UserVerificationRequirement.REQUIRED,
+        )
+        return _options_json(options)
+
+    async def reauth_passkey(
+        self, session: SessionContext, credential: dict[str, Any], now: datetime, client: ClientInfo
+    ) -> None:
+        auth = self._auth
+        async with auth._attempt("signin_passkey", client.ip_hash, now) as attempt:
+            attempt.user_id = session.user_id
+            await auth._guard(attempt)
+            auth._refuse_if_locked(attempt)
+            challenge = _client_challenge(credential)
+            credential_id = _raw_id(credential)
+            if challenge is None or credential_id is None:
+                raise SignInFailed
+            async with system_transaction(self._db) as tx:
+                spent = await repo.consume_challenge(tx, ("reauth", "unlock"), challenge, now)
+                stored = await repo.find_credential(tx, credential_id)
+            if spent is None or spent.user_id != session.user_id:
+                raise SignInFailed
+            if stored is None or stored.user_id != session.user_id:
+                raise SignInFailed
+            if _user_handle(credential) != stored.user_id.bytes:
+                raise SignInFailed
+            try:
+                verified = verify_authentication_response(
+                    credential=credential,
+                    expected_challenge=challenge,
+                    expected_rp_id=auth._rp_id,
+                    expected_origin=auth._origin,
+                    credential_public_key=stored.public_key,
+                    credential_current_sign_count=stored.sign_count,
+                    require_user_verification=True,
+                )
+            except (WebAuthnException, KeyError, TypeError, ValueError):
+                raise SignInFailed from None
+            async with user_transaction(self._db, session.user_id) as tx:
+                if not await repo.record_credential_use(
+                    tx, credential_id, verified.new_sign_count, verified.credential_backed_up, now
+                ):
+                    raise SignInFailed
+                await repo.set_reauth(tx, session.session_id, now)
+                # A passkey unlock (or any passkey verification) also resets the PIN tries.
+                await repo.reset_pin_failures(tx, session.session_id)
+
+    async def reauth_password(
+        self, session: SessionContext, password: str, code: str, now: datetime, client: ClientInfo
+    ) -> None:
+        auth = self._auth
+        async with auth._attempt("signin_password", client.ip_hash, now) as attempt:
+            attempt.user_id = session.user_id
+            await auth._guard(attempt)
+            await auth._guard(attempt, session.user_id)
+            auth._refuse_if_locked(attempt)
+            async with user_transaction(self._db, session.user_id) as tx:
+                credentials = await repo.password_credentials(tx, session.user_id)
+            stored_hash = credentials.password_hash if credentials else None
+            if not await asyncio.to_thread(_password_matches, stored_hash, password):
+                raise SignInFailed
+            if credentials is None or not credentials.totp_enabled:
+                raise SignInFailed
+            async with user_transaction(self._db, session.user_id) as tx:
+                if not await auth._check_totp(
+                    tx, session.user_id, credentials.totp_secret_enc, code, now
+                ):
+                    raise SignInFailed
+                await repo.set_reauth(tx, session.session_id, now)
+
+    # ----- sessions (AUTH-5) -----
+
+    async def sessions(
+        self, session: SessionContext, now: datetime
+    ) -> list[tuple[repo.SessionItem, bool]]:
+        async with user_transaction(self._db, session.user_id) as tx:
+            items = await repo.active_sessions(tx, session.user_id, now)
+        return [(item, item.id == session.session_id) for item in items]
+
+    async def revoke_session(
+        self, session: SessionContext, session_id: uuid.UUID, now: datetime, client: ClientInfo
+    ) -> None:
+        async with user_transaction(self._db, session.user_id) as tx:
+            if not await repo.revoke_user_session(tx, session.user_id, session_id, now):
+                raise NotFound
+            await repo.spend_pending_challenges(tx, session.user_id, now)
+        await self._auth._log("revoke", True, session.user_id, client.ip_hash, now)
+
+    # ----- passkeys -----
+
+    async def passkeys(self, session: SessionContext) -> list[repo.PasskeyItem]:
+        async with user_transaction(self._db, session.user_id) as tx:
+            return await repo.passkeys(tx, session.user_id)
+
+    async def add_passkey_options(self, session: SessionContext, now: datetime) -> dict[str, Any]:
+        self.require_recent_auth(session, now)  # CR-020
+        challenge = secrets.token_bytes(CHALLENGE_BYTES)
+        async with user_transaction(self._db, session.user_id) as tx:
+            if not await repo.hold_live_session(tx, session.session_id):
+                raise NotSignedIn
+            account = await repo.account(tx, session.user_id)
+            mine = await repo.passkeys(tx, session.user_id)
+            if account is None:
+                raise NotSignedIn
+            await repo.insert_challenge(
+                tx,
+                challenge_id=new_id(),
+                purpose="add_passkey",
+                challenge=challenge,
+                user_id=session.user_id,
+                now=now,
+                expires_at=now + CHALLENGE_TTL,
+            )
+        options = self._auth._creation_options(
+            session.user_id, account.email, account.display_name, challenge
+        )
+        options["excludeCredentials"] = [
+            {"type": "public-key", "id": _b64url(p.credential_id)} for p in mine
+        ]
+        return options
+
+    async def add_passkey(
+        self, session: SessionContext, credential: dict[str, Any], now: datetime, client: ClientInfo
+    ) -> SignedIn:
+        """Add a passkey to the signed-in account (no new session). The challenge must be one
+        this account asked for, not a recovery invite's (CR-018). Needs recent auth (CR-020)."""
+        self.require_recent_auth(session, now)
+        auth = self._auth
+        async with auth._attempt("register", client.ip_hash, now) as attempt:
+            attempt.user_id = session.user_id
+            challenge = _client_challenge(credential)
+            if challenge is None:
+                raise RegistrationFailed
+            async with system_transaction(self._db) as tx:
+                spent = await repo.consume_challenge(tx, "add_passkey", challenge, now)
+            if spent is None or spent.user_id != session.user_id or spent.invite_id is not None:
+                raise RegistrationFailed
+            verified = auth._verify_new_passkey(credential, challenge)
+            async with user_transaction(self._db, session.user_id) as tx:
+                account = await repo.account(tx, session.user_id)
+                if account is None:
+                    raise RegistrationFailed
+                await auth._store_passkey(tx, session.user_id, verified, credential, now)
+        return SignedIn(user_id=session.user_id, display_name=account.display_name)
+
+    async def remove_passkey(
+        self, session: SessionContext, passkey_id: uuid.UUID, now: datetime
+    ) -> None:
+        """12.3: needs recent auth; refused when it is her last sign-in method (passkeys, or a
+        password with confirmed TOTP)."""
+        async with user_transaction(self._db, session.user_id) as tx:
+            mine = await repo.lock_passkeys(tx, session.user_id)  # serialises removals
+            if passkey_id not in mine:
+                raise NotFound
+            self.require_recent_auth(session, now)
+            credentials = await repo.password_credentials(tx, session.user_id)
+            methods = len(mine) + (1 if credentials and credentials.totp_enabled else 0)
+            if methods <= 1:
+                raise LastSignInMethod
+            await repo.delete_passkey(tx, session.user_id, passkey_id)
+
+    # ----- recovery codes (AUTH-4) -----
+
+    async def regenerate_recovery_codes(self, session: SessionContext, now: datetime) -> list[str]:
+        """Needs recent auth; the old codes stop working ("regenerating invalidates old codes")."""
+        self.require_recent_auth(session, now)
+        codes, hashes = await _new_recovery_codes()
+        async with user_transaction(self._db, session.user_id) as tx:
+            await repo.delete_recovery_codes(tx, session.user_id)
+            await repo.insert_recovery_codes(tx, session.user_id, hashes)
+        return codes
+
+    # ----- app lock (AUTH-6) -----
+
+    async def set_app_lock(
+        self,
+        session: SessionContext,
+        now: datetime,
+        *,
+        pin: str | None,
+        change_pin: bool,
+        timeout_s: int | None,
+    ) -> None:
+        """Changing or clearing the PIN needs recent auth (CR-020); the timeout alone does not."""
+        if change_pin:
+            self.require_recent_auth(session, now)
+        pin_hash = None
+        if change_pin and pin is not None:
+            pin_hash = await asyncio.to_thread(PASSWORD_HASHER.hash, pin)
+        async with user_transaction(self._db, session.user_id) as tx:
+            await repo.set_app_lock(
+                tx, session.user_id, pin_hash=pin_hash, change_pin=change_pin, timeout_s=timeout_s
+            )
+
+    async def unlock_with_pin(
+        self, session: SessionContext, pin: str, now: datetime, client: ClientInfo
+    ) -> None:
+        """Each try is counted on this session before the PIN is checked (CR-021), so concurrent
+        tries cannot exceed five; a good PIN resets the count; the fifth wrong one (or any try
+        past it) revokes the session."""
+        async with user_transaction(self._db, session.user_id) as tx:
+            stored = await repo.pin_hash(tx, session.user_id)
+        if stored is None:
+            raise NoPin
+        async with self._auth._attempt("pin_unlock", client.ip_hash, now) as attempt:
+            attempt.user_id = session.user_id
+            async with user_transaction(self._db, session.user_id) as tx:
+                tries = await repo.bump_pin_failures(tx, session.session_id)
+            if tries > PIN_TRIES:
+                await self._end_session(session, now)
+                raise PinLockedOut
+            if await asyncio.to_thread(_password_matches, stored, pin):
+                async with user_transaction(self._db, session.user_id) as tx:
+                    await repo.reset_pin_failures(tx, session.session_id)
+                return
+            if tries == PIN_TRIES:
+                await self._end_session(session, now)
+                raise PinLockedOut
+            raise PinFailed
+
+    async def _end_session(self, session: SessionContext, now: datetime) -> None:
+        async with user_transaction(self._db, session.user_id) as tx:
+            await repo.revoke_session(tx, session.session_id, now)
+            await repo.spend_pending_challenges(tx, session.user_id, now)
+
+    # ----- recovery invites (AUTH-8, CR-018) -----
+
+    async def issue_recovery_invite(
+        self, admin: SessionContext, user_id: uuid.UUID, now: datetime, client: ClientInfo
+    ) -> tuple[str, datetime]:
+        """A single-use 24-hour invite to add a passkey to `user_id`'s account; returns the token
+        and its expiry. Needs the admin's recent auth (CR-020). In one transaction as
+        `lifeos_admin` (CR-022): her earlier unused recovery invites are revoked, all her
+        sessions are revoked and their pending challenges spent, a security notice is queued
+        for her devices and the audit log is written."""
+        self.require_recent_auth(admin, now)
+        if self._admin_db is None:
+            raise AdminWritesUnavailable
+        token = _b64url(secrets.token_bytes(INVITE_TOKEN_BYTES))
+        expires_at = now + RECOVERY_INVITE_TTL
+        async with system_transaction(self._admin_db) as tx:
+            account = await repo.account(tx, user_id)
+            if account is None:
+                raise NotFound
+            await repo.revoke_recovery_invites(tx, user_id, now)
+            await repo.insert_invite(
+                tx,
+                invite_id=new_id(),
+                token_hash=_sha256(token.encode()),
+                email=account.email,
+                created_by=admin.user_id,
+                expires_at=expires_at,
+                now=now,
+                recover_user_id=user_id,
+            )
+            await repo.revoke_all_sessions(tx, user_id, now)
+            await repo.spend_pending_challenges(tx, user_id, now)
+            await publish(tx, user_id, SECURITY_NOTICE, {"event": "recovery_invite"})
+            await repo.insert_audit(
+                tx,
+                actor_user_id=admin.user_id,
+                actor_role="admin",
+                action="admin.recovery_invite",
+                target_user_id=user_id,
+                ip_hash=client.ip_hash,
+                now=now,
+            )
+        return token, expires_at
+
+    async def _recovery_invite(self, token: str, now: datetime) -> tuple[repo.Invite, uuid.UUID]:
+        """A live recovery invite and the account it recovers; InviteInvalid otherwise."""
+        async with system_transaction(self._db) as tx:
+            invite = await repo.find_valid_invite(tx, _sha256(token.encode()), now, recovery=True)
+        if invite is None or invite.recover_user_id is None:
+            raise InviteInvalid
+        return invite, invite.recover_user_id
+
+    async def recover_options(self, token: str, now: datetime) -> dict[str, Any]:
+        invite, user_id = await self._recovery_invite(token, now)
+        challenge = secrets.token_bytes(CHALLENGE_BYTES)
+        async with user_transaction(self._db, user_id) as tx:
+            account = await repo.account(tx, user_id)
+            if account is None:
+                raise InviteInvalid
+            await repo.insert_challenge(
+                tx,
+                challenge_id=new_id(),
+                purpose="add_passkey",
+                challenge=challenge,
+                invite_id=invite.id,
+                user_id=user_id,
+                now=now,
+                expires_at=now + CHALLENGE_TTL,
+            )
+        return self._auth._creation_options(user_id, account.email, account.display_name, challenge)
+
+    async def recover(
+        self, token: str, credential: dict[str, Any], now: datetime, client: ClientInfo
+    ) -> tuple[Registered, NewSession]:
+        """Finish an AUTH-8 recovery: a new passkey on her account, fresh recovery codes (the
+        old ones are deleted), the invite spent and a new session."""
+        auth = self._auth
+        async with auth._attempt("recovery", client.ip_hash, now) as attempt:
+            await auth._guard(attempt)
+            auth._refuse_if_locked(attempt)
+            invite, user_id = await self._recovery_invite(token, now)
+            attempt.user_id = user_id
+            challenge = _client_challenge(credential)
+            if challenge is None:
+                raise RegistrationFailed
+            async with system_transaction(self._db) as tx:
+                spent = await repo.consume_challenge(tx, "add_passkey", challenge, now)
+            if spent is None or spent.invite_id != invite.id or spent.user_id != user_id:
+                raise InviteInvalid
+            verified = auth._verify_new_passkey(credential, challenge)
+            codes, hashes = await _new_recovery_codes()
+            async with user_transaction(self._db, user_id) as tx:
+                account = await repo.account(tx, user_id)
+                if account is None or not await repo.use_invite(tx, invite.id, user_id, now):
+                    raise InviteInvalid
+                await auth._store_passkey(tx, user_id, verified, credential, now)
+                await repo.delete_recovery_codes(tx, user_id)
+                await repo.insert_recovery_codes(tx, user_id, hashes)
+                await repo.revoke_recovery_invites(tx, user_id, now)
+                session = await auth._start_session(tx, user_id, now, client)
+        registered = Registered(
+            user_id=user_id, display_name=account.display_name, recovery_codes=codes
+        )
+        return registered, session
+
+    async def role(self, session: SessionContext) -> str | None:
+        async with user_transaction(self._db, session.user_id) as tx:
+            return await repo.user_role(tx, session.user_id)

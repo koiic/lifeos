@@ -9,11 +9,14 @@ jobs are idempotent and the per-user queueing lock drops duplicates still waitin
 this worker does not know stay unprocessed for a worker that does (e.g. during a deploy).
 """
 
+import json
 import uuid
+from typing import Any
 
 import procrastinate
 import structlog
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncConnection
 
 from app.platform.jobs import Runtime, defer_for_user
 
@@ -23,6 +26,20 @@ BATCH = 500
 log = structlog.get_logger()
 
 _subscriptions: dict[str, list[str]] = {}
+
+
+async def publish(
+    conn: AsyncConnection, user_id: uuid.UUID, topic: str, body: dict[str, Any]
+) -> None:
+    """Write an event in the caller's transaction (the relay delivers it after commit). `body`
+    holds ids and kinds only, never health values (7.2)."""
+    await conn.execute(
+        text(
+            "INSERT INTO outbox_events (user_id, topic, body)"
+            " VALUES (:user_id, :topic, CAST(:body AS jsonb))"
+        ),
+        {"user_id": user_id, "topic": topic, "body": json.dumps(body)},
+    )
 
 
 def subscribe(topic: str, task_name: str) -> None:

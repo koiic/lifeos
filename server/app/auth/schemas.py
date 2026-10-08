@@ -3,11 +3,19 @@
 import re
 import unicodedata
 import uuid
+from datetime import datetime
 from functools import cache
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, StringConstraints
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    model_validator,
+)
 from pydantic_core import PydanticCustomError
 
 # A practical shape check (one @, a dot in the domain, no spaces); the invite proves ownership.
@@ -170,3 +178,90 @@ class PasswordSignIn(Strict):
     email: Email
     password: Annotated[str, StringConstraints(max_length=PASSWORD_MAX), AfterValidator(nfc)]
     totp: TotpCode
+
+
+# ---------- T08: sessions, passkeys, re-auth, app lock, recovery (9.2; CR-017/018/019) ----------
+
+
+class SessionOut(BaseModel):
+    id: uuid.UUID
+    device_label: str | None
+    created_at: datetime
+    last_seen_at: datetime
+    current: bool
+
+
+class SessionList(BaseModel):
+    items: list[SessionOut]
+    next_cursor: None = None  # 9.1 list shape; her live sessions always fit one page
+
+
+class PasskeyOut(BaseModel):
+    id: uuid.UUID
+    nickname: str
+    created_at: datetime
+    last_used_at: datetime | None
+    backed_up: bool
+
+
+class PasskeyList(BaseModel):
+    items: list[PasskeyOut]
+    next_cursor: None = None
+
+
+class ReauthOptionsRequest(Strict):
+    purpose: Literal["reauth", "unlock"]
+
+
+class ReauthVerify(Strict):
+    """A passkey assertion (`credential`), or `password` and `totp` for a password account."""
+
+    credential: Credential | None = None
+    password: (
+        Annotated[str, StringConstraints(max_length=PASSWORD_MAX), AfterValidator(nfc)] | None
+    ) = None
+    totp: TotpCode | None = None
+
+    @model_validator(mode="after")
+    def _one_method(self) -> "ReauthVerify":
+        passkey = self.credential is not None
+        password = self.password is not None and self.totp is not None
+        if passkey == password or (self.password is None) != (self.totp is None):
+            raise ValueError("send a credential, or a password and a code")
+        return self
+
+
+class RecoveryCodes(BaseModel):
+    # Shown once; only argon2id hashes are stored. The previous codes no longer work.
+    recovery_codes: list[str]
+
+
+Pin = Annotated[str, StringConstraints(pattern=r"^\d{6}$")]
+
+
+class AppLockSettings(Strict):
+    """`pin`: six digits to set it, null to clear it, absent to keep it (AUTH-6)."""
+
+    pin: Pin | None = None
+    timeout_s: Annotated[int, Field(ge=60, le=3600)] | None = None
+
+
+class PinUnlock(Strict):
+    pin: Annotated[str, StringConstraints(max_length=16)]
+
+
+class RecoveryInvite(BaseModel):
+    """Shown once to the admin, who sends her the link (AUTH-8)."""
+
+    token: str
+    link: str
+    expires_at: datetime
+
+
+class RecoverOptions(Strict):
+    token: Token
+
+
+class RecoverVerify(Strict):
+    token: Token
+    credential: Credential

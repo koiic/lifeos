@@ -28,6 +28,7 @@ class CredentialTaken(Exception):
 class Invite:
     id: uuid.UUID
     email: str | None
+    recover_user_id: uuid.UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -57,22 +58,28 @@ class SessionTimes:
     created_at: datetime
     last_seen_at: datetime
     expires_at: datetime
+    reauth_at: datetime | None
 
 
 # ---------- invites and challenges (system tables) ----------
 
 
-async def find_valid_invite(tx: Transaction, token_hash: bytes, now: datetime) -> Invite | None:
-    row = (
-        await tx.execute(
-            text(
-                "SELECT id, email::text AS email FROM invites WHERE token_hash = :hash"
-                " AND used_at IS NULL AND revoked_at IS NULL AND expires_at > :now"
-            ),
-            {"hash": token_hash, "now": now},
-        )
-    ).one_or_none()
-    return Invite(row.id, row.email) if row else None
+_INVITE = (
+    "SELECT id, email::text AS email, recover_user_id FROM invites"
+    " WHERE token_hash = :hash AND used_at IS NULL AND revoked_at IS NULL AND expires_at > :now"
+)
+REGISTRATION_INVITE = _INVITE + " AND recover_user_id IS NULL"
+RECOVERY_INVITE = _INVITE + " AND recover_user_id IS NOT NULL"
+
+
+async def find_valid_invite(
+    tx: Transaction, token_hash: bytes, now: datetime, *, recovery: bool = False
+) -> Invite | None:
+    """A live invite of the requested kind: registration (`recover_user_id` null) or recovery
+    (CR-018); a token of the other kind is not found."""
+    query = RECOVERY_INVITE if recovery else REGISTRATION_INVITE
+    row = (await tx.execute(text(query), {"hash": token_hash, "now": now})).one_or_none()
+    return Invite(row.id, row.email, row.recover_user_id) if row else None
 
 
 async def use_invite(
@@ -100,11 +107,13 @@ async def insert_invite(
     created_by: uuid.UUID,
     expires_at: datetime,
     now: datetime,
+    recover_user_id: uuid.UUID | None = None,
 ) -> None:
     await tx.execute(
         text(
-            "INSERT INTO invites (id, token_hash, email, created_by, expires_at, created_at)"
-            " VALUES (:id, :hash, :email, :created_by, :expires_at, :now)"
+            "INSERT INTO invites"
+            " (id, token_hash, email, created_by, expires_at, created_at, recover_user_id)"
+            " VALUES (:id, :hash, :email, :created_by, :expires_at, :now, :recover)"
         ),
         {
             "id": invite_id,
@@ -113,6 +122,7 @@ async def insert_invite(
             "created_by": created_by,
             "expires_at": expires_at,
             "now": now,
+            "recover": recover_user_id,
         },
     )
 
@@ -154,17 +164,18 @@ async def insert_challenge(
 
 
 async def consume_challenge(
-    tx: Transaction, purpose: str, challenge: bytes, now: datetime
+    tx: Transaction, purpose: str | tuple[str, ...], challenge: bytes, now: datetime
 ) -> Challenge | None:
     """Use a live challenge once; None when unknown, used, expired or for another purpose."""
+    purposes = [purpose] if isinstance(purpose, str) else list(purpose)
     row = (
         await tx.execute(
             text(
                 "UPDATE auth_challenges SET used_at = :now"
-                " WHERE challenge = :challenge AND purpose = :purpose"
+                " WHERE challenge = :challenge AND purpose = ANY(:purposes)"
                 " AND used_at IS NULL AND expires_at > :now RETURNING id, invite_id, user_id"
             ),
-            {"challenge": challenge, "purpose": purpose, "now": now},
+            {"challenge": challenge, "purposes": purposes, "now": now},
         )
     ).one_or_none()
     return Challenge(row.id, row.invite_id, row.user_id) if row else None
@@ -364,12 +375,14 @@ async def insert_session(
     now: datetime,
     expires_at: datetime,
     ip_hash: bytes,
+    device_label: str,
 ) -> None:
+    """A new session; signing in is a fresh verification, so `reauth_at` starts now (CR-017)."""
     await tx.execute(
         text(
-            "INSERT INTO sessions"
-            " (id, user_id, token_hash, created_at, last_seen_at, expires_at, ip_hash)"
-            " VALUES (:id, :user_id, :hash, :now, :now, :expires_at, :ip_hash)"
+            "INSERT INTO sessions (id, user_id, token_hash, created_at, last_seen_at, expires_at,"
+            " ip_hash, device_label, reauth_at)"
+            " VALUES (:id, :user_id, :hash, :now, :now, :expires_at, :ip_hash, :device, :now)"
         ),
         {
             "id": session_id,
@@ -378,6 +391,7 @@ async def insert_session(
             "now": now,
             "expires_at": expires_at,
             "ip_hash": ip_hash,
+            "device": device_label,
         },
     )
 
@@ -385,11 +399,16 @@ async def insert_session(
 async def session_times(tx: Transaction, session_id: uuid.UUID) -> SessionTimes | None:
     row = (
         await tx.execute(
-            text("SELECT created_at, last_seen_at, expires_at FROM sessions WHERE id = :id"),
+            text(
+                "SELECT created_at, last_seen_at, expires_at, reauth_at FROM sessions"
+                " WHERE id = :id"
+            ),
             {"id": session_id},
         )
     ).one_or_none()
-    return SessionTimes(row.created_at, row.last_seen_at, row.expires_at) if row else None
+    if row is None:
+        return None
+    return SessionTimes(row.created_at, row.last_seen_at, row.expires_at, row.reauth_at)
 
 
 async def slide_session(
@@ -590,3 +609,239 @@ async def count_session_request(
     ).one()
     count: int = row._mapping["count"]  # `row.count` is the Row method
     return row.window_start, count
+
+
+# ---------- session management, passkeys, app lock, recovery (T08) ----------
+
+
+@dataclass(frozen=True)
+class SessionItem:
+    id: uuid.UUID
+    device_label: str | None
+    created_at: datetime
+    last_seen_at: datetime
+
+
+@dataclass(frozen=True)
+class PasskeyItem:
+    id: uuid.UUID
+    credential_id: bytes
+    nickname: str
+    created_at: datetime
+    last_used_at: datetime | None
+    backed_up: bool
+
+
+async def active_sessions(tx: Transaction, user_id: uuid.UUID, now: datetime) -> list[SessionItem]:
+    rows = await tx.execute(
+        text(
+            "SELECT id, device_label, created_at, last_seen_at FROM sessions"
+            " WHERE user_id = :user_id AND revoked_at IS NULL AND expires_at > :now"
+            " ORDER BY created_at"
+        ),
+        {"user_id": user_id, "now": now},
+    )
+    return [SessionItem(r.id, r.device_label, r.created_at, r.last_seen_at) for r in rows]
+
+
+async def revoke_user_session(
+    tx: Transaction, user_id: uuid.UUID, session_id: uuid.UUID, now: datetime
+) -> bool:
+    """Revoke one of the user's live sessions; False when there is no such session."""
+    row = (
+        await tx.execute(
+            text(
+                "UPDATE sessions SET revoked_at = :now WHERE id = :id AND user_id = :user_id"
+                " AND revoked_at IS NULL AND expires_at > :now RETURNING id"
+            ),
+            {"id": session_id, "user_id": user_id, "now": now},
+        )
+    ).one_or_none()
+    return row is not None
+
+
+async def revoke_all_sessions(tx: Transaction, user_id: uuid.UUID, now: datetime) -> int:
+    rows = await tx.execute(
+        text(
+            "UPDATE sessions SET revoked_at = :now WHERE user_id = :user_id"
+            " AND revoked_at IS NULL RETURNING id"
+        ),
+        {"user_id": user_id, "now": now},
+    )
+    return len(rows.all())
+
+
+async def set_reauth(tx: Transaction, session_id: uuid.UUID, now: datetime) -> None:
+    await tx.execute(
+        text("UPDATE sessions SET reauth_at = :now WHERE id = :id"), {"id": session_id, "now": now}
+    )
+
+
+async def passkeys(tx: Transaction, user_id: uuid.UUID) -> list[PasskeyItem]:
+    rows = await tx.execute(
+        text(
+            "SELECT id, credential_id, nickname, created_at, last_used_at, backed_up"
+            " FROM webauthn_credentials WHERE user_id = :user_id ORDER BY created_at, id"
+        ),
+        {"user_id": user_id},
+    )
+    return [
+        PasskeyItem(r.id, r.credential_id, r.nickname, r.created_at, r.last_used_at, r.backed_up)
+        for r in rows
+    ]
+
+
+async def delete_passkey(tx: Transaction, user_id: uuid.UUID, passkey_id: uuid.UUID) -> bool:
+    row = (
+        await tx.execute(
+            text(
+                "DELETE FROM webauthn_credentials WHERE id = :id AND user_id = :user_id"
+                " RETURNING id"
+            ),
+            {"id": passkey_id, "user_id": user_id},
+        )
+    ).one_or_none()
+    return row is not None
+
+
+async def delete_recovery_codes(tx: Transaction, user_id: uuid.UUID) -> None:
+    await tx.execute(
+        text("DELETE FROM recovery_codes WHERE user_id = :user_id"), {"user_id": user_id}
+    )
+
+
+async def pin_hash(tx: Transaction, user_id: uuid.UUID) -> str | None:
+    value: str | None = (
+        await tx.execute(
+            text("SELECT app_lock_pin_hash FROM user_settings WHERE user_id = :user_id"),
+            {"user_id": user_id},
+        )
+    ).scalar_one_or_none()
+    return value
+
+
+async def set_app_lock(
+    tx: Transaction,
+    user_id: uuid.UUID,
+    *,
+    pin_hash: str | None,
+    change_pin: bool,
+    timeout_s: int | None,
+) -> None:
+    await tx.execute(
+        text(
+            "UPDATE user_settings SET"
+            " app_lock_pin_hash = CASE WHEN :change_pin THEN :pin_hash"
+            " ELSE app_lock_pin_hash END,"
+            " app_lock_timeout_s = COALESCE(:timeout_s, app_lock_timeout_s)"
+            " WHERE user_id = :user_id"
+        ),
+        {
+            "user_id": user_id,
+            "pin_hash": pin_hash,
+            "change_pin": change_pin,
+            "timeout_s": timeout_s,
+        },
+    )
+
+
+async def bump_pin_failures(tx: Transaction, session_id: uuid.UUID) -> int:
+    """Count one PIN try on this session before checking it (CR-021); returns the count so far.
+    Atomic on the row, so concurrent tries each get their own number."""
+    count: int = (
+        await tx.execute(
+            text(
+                "UPDATE sessions SET pin_failures = pin_failures + 1 WHERE id = :id"
+                " RETURNING pin_failures"
+            ),
+            {"id": session_id},
+        )
+    ).scalar_one()
+    return count
+
+
+async def reset_pin_failures(tx: Transaction, session_id: uuid.UUID) -> None:
+    await tx.execute(
+        text("UPDATE sessions SET pin_failures = 0 WHERE id = :id"), {"id": session_id}
+    )
+
+
+async def spend_pending_challenges(tx: Transaction, user_id: uuid.UUID, now: datetime) -> None:
+    """Spend the account's unused passkey-add, re-auth and unlock challenges, so none issued to a
+    session can be finished after that session is revoked (recovery-invite challenges, which
+    carry their invite, are left alone)."""
+    await tx.execute(
+        text(
+            "UPDATE auth_challenges SET used_at = :now WHERE user_id = :user_id"
+            " AND used_at IS NULL AND invite_id IS NULL"
+            " AND purpose IN ('add_passkey', 'reauth', 'unlock')"
+        ),
+        {"user_id": user_id, "now": now},
+    )
+
+
+async def revoke_recovery_invites(tx: Transaction, user_id: uuid.UUID, now: datetime) -> None:
+    """Revoke the account's unused recovery invites (only the newest link may work)."""
+    await tx.execute(
+        text(
+            "UPDATE invites SET revoked_at = :now WHERE recover_user_id = :user_id"
+            " AND used_at IS NULL AND revoked_at IS NULL"
+        ),
+        {"user_id": user_id, "now": now},
+    )
+
+
+async def lock_passkeys(tx: Transaction, user_id: uuid.UUID) -> list[uuid.UUID]:
+    """Her passkey ids, locked for the rest of the transaction (serialises removals)."""
+    rows = await tx.execute(
+        text("SELECT id FROM webauthn_credentials WHERE user_id = :user_id FOR UPDATE"),
+        {"user_id": user_id},
+    )
+    return [row.id for row in rows]
+
+
+async def user_role(tx: Transaction, user_id: uuid.UUID) -> str | None:
+    role: str | None = (
+        await tx.execute(
+            text("SELECT role FROM users WHERE id = :id AND deleted_at IS NULL"), {"id": user_id}
+        )
+    ).scalar_one_or_none()
+    return role
+
+
+async def insert_audit(
+    tx: Transaction,
+    *,
+    actor_user_id: uuid.UUID,
+    actor_role: str,
+    action: str,
+    target_user_id: uuid.UUID | None,
+    ip_hash: bytes,
+    now: datetime,
+) -> None:
+    await tx.execute(
+        text(
+            "INSERT INTO audit_log (actor_user_id, actor_role, action, target_user_id, at, ip_hash)"
+            " VALUES (:actor, :role, :action, :target, :now, :ip_hash)"
+        ),
+        {
+            "actor": actor_user_id,
+            "role": actor_role,
+            "action": action,
+            "target": target_user_id,
+            "now": now,
+            "ip_hash": ip_hash,
+        },
+    )
+
+
+async def hold_live_session(tx: Transaction, session_id: uuid.UUID) -> bool:
+    """Share-lock the session row if it is still live, so a revocation cannot commit between this
+    check and the rest of the transaction (it waits, then spends what this inserted)."""
+    row = (
+        await tx.execute(
+            text("SELECT 1 FROM sessions WHERE id = :id AND revoked_at IS NULL FOR SHARE"),
+            {"id": session_id},
+        )
+    ).one_or_none()
+    return row is not None

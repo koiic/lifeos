@@ -38,6 +38,8 @@ class Settings(BaseModel):
     database_owner_url: SecretStr | None = None
     # lifeos_jobs connection for the worker (CR-003, 14.3); the API does not need it.
     database_jobs_url: SecretStr | None = None
+    # lifeos_admin connection for admin endpoints that write (CR-022); without it they answer 503.
+    database_admin_write_url: SecretStr | None = None
     # WebAuthn relying party ID (12.3): the app's domain; defaults to APP_ORIGIN's host.
     webauthn_rp_id: str
     # Master key file content (12.2, CR-011); None only in ENV=local (fixed development key).
@@ -108,6 +110,10 @@ def load_settings(
     if not rp_id_covers(rp_id, app_origin):
         raise ConfigError("WEBAUTHN_RP_ID must be the APP_ORIGIN host or a parent domain of it")
 
+    admin_write_url = read_secret("database_admin_write_url", secrets_dir)
+    if admin_write_url is None and local:
+        admin_write_url = environ.get("DATABASE_ADMIN_WRITE_URL", database_url)
+
     kek = read_secret("lifeos_kek", secrets_dir)
     ip_key = read_secret("ip_hmac_key", secrets_dir)
     if ip_key is None and local:
@@ -119,6 +125,7 @@ def load_settings(
         database_url=SecretStr(database_url),
         database_owner_url=SecretStr(owner_url) if owner_url else None,
         database_jobs_url=SecretStr(jobs_url) if jobs_url else None,
+        database_admin_write_url=SecretStr(admin_write_url) if admin_write_url else None,
         webauthn_rp_id=rp_id,
         lifeos_kek=SecretStr(kek) if kek else None,
         ip_hmac_key=SecretStr(ip_key) if ip_key else None,

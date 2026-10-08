@@ -57,7 +57,21 @@ SPEC_TABLES = spec_tables()
 PENDING_CR_TABLES = {
     "session_request_counts": {"session_id", "window_start", "count"},  # CR-016
 }
+# Columns added to spec tables by approved change requests (spec re-sync pending).
+PENDING_CR_COLUMNS = {
+    "sessions": {"reauth_at", "pin_failures"},  # CR-017, CR-021
+    "invites": {"recover_user_id"},  # CR-018
+}
 EXPECTED_TABLES = SPEC_TABLES | PENDING_CR_TABLES
+EXPECTED_TABLES = {
+    table: columns | PENDING_CR_COLUMNS.get(table, set())
+    for table, columns in EXPECTED_TABLES.items()
+}
+
+
+def test_pending_cr_columns_are_not_yet_in_the_spec() -> None:
+    for table, columns in PENDING_CR_COLUMNS.items():
+        assert not columns & SPEC_TABLES[table], table
 
 
 def test_pending_cr_tables_are_not_yet_in_the_spec() -> None:

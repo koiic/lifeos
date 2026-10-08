@@ -1,7 +1,9 @@
 """Auth API tests: the real app, the real database, a software authenticator and a test clock."""
 
+import base64
 import hashlib
 import hmac
+import secrets
 import uuid
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
@@ -58,6 +60,39 @@ class AuthEnv:
         return self.client.post(
             f"/api/v1{path}", json=json, headers=HEADERS | {"CF-Connecting-IP": self.ip}
         )
+
+    def get(self, path: str) -> httpx.Response:
+        return self.client.get(f"/api/v1{path}", headers={"CF-Connecting-IP": self.ip})
+
+    def put(self, path: str, json: object) -> httpx.Response:
+        return self.client.put(
+            f"/api/v1{path}", json=json, headers=HEADERS | {"CF-Connecting-IP": self.ip}
+        )
+
+    def delete(self, path: str) -> httpx.Response:
+        return self.client.delete(f"/api/v1{path}", headers=HEADERS | {"CF-Connecting-IP": self.ip})
+
+    async def admin_token(self) -> str:
+        """A signed-in session for the admin (made active with a stand-in passkey row)."""
+        raw = secrets.token_bytes(32)
+        await self.db.execute(
+            "INSERT INTO webauthn_credentials (id, user_id, credential_id, public_key)"
+            " VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING",
+            uuid.uuid4(),
+            self.admin_id,
+            b"admin-credential-" + self.admin_id.bytes,
+            b"key",
+        )
+        await self.db.execute(
+            "INSERT INTO sessions (id, user_id, token_hash, created_at, last_seen_at, expires_at,"
+            " reauth_at) VALUES ($1, $2, $3, $4, $4, $5, $4)",
+            uuid.uuid4(),
+            self.admin_id,
+            hashlib.sha256(raw).digest(),
+            self.clock.now,
+            self.clock.now + timedelta(days=30),
+        )
+        return base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
 
     def ip_hash(self, ip: str | None = None) -> bytes:
         return hmac.new(IP_KEY.encode(), (ip or self.ip).encode(), hashlib.sha256).digest()
@@ -209,6 +244,7 @@ async def env(migrated: str) -> AsyncIterator[AuthEnv]:
         database_url=migrated,
         webauthn_rp_id=RP_ID,
         ip_hmac_key=IP_KEY,
+        database_admin_write_url=migrated,  # runs as lifeos_admin (CR-022)
     )
     app = create_app(settings)
     app.include_router(whoami_router())

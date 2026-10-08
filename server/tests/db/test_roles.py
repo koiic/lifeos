@@ -55,9 +55,15 @@ async def test_admin_reads_its_user_columns_and_tables_across_users(
     await as_role(db, "lifeos_admin_ro")
     users = await db.fetch("SELECT id, email, display_name, role, created_at FROM users")
     assert len(users) >= 2
-    sessions = "SELECT id, user_id, created_at, last_seen_at, expires_at, revoked_at FROM sessions"
+    sessions = (
+        "SELECT id, user_id, created_at, last_seen_at, expires_at, revoked_at, reauth_at,"
+        " pin_failures FROM sessions"
+    )
     assert len(await db.fetch(sessions)) >= 2
-    await db.fetch("SELECT id, email, created_by, expires_at, used_at, revoked_at FROM invites")
+    await db.fetch(
+        "SELECT id, email, created_by, expires_at, used_at, revoked_at, recover_user_id"
+        " FROM invites"
+    )
     for table in ("auth_events", "audit_log"):
         await db.fetch(f"SELECT * FROM {table}")  # noqa: S608
 
@@ -189,7 +195,15 @@ async def test_lifeos_owner_bypasses_rls_but_is_not_superuser(db: asyncpg.Connec
 
 
 @pytest.mark.parametrize(
-    "role", ["lifeos_app", "lifeos_admin_ro", "lifeos_jobs", "lifeos_dispatcher", "lifeos_backup"]
+    "role",
+    [
+        "lifeos_app",
+        "lifeos_admin_ro",
+        "lifeos_admin",
+        "lifeos_jobs",
+        "lifeos_dispatcher",
+        "lifeos_backup",
+    ],
 )
 async def test_only_the_owner_can_create_in_schema_public(
     db: asyncpg.Connection, role: str
@@ -231,6 +245,18 @@ EXACT_GRANTS: dict[str, dict[str, dict[str, set[str] | str]]] = {
         "pending_deletions": {"SELECT": ALL},
         # CR-010: retention deletes old auth events (10.1 account.purge); `at` for the WHERE.
         "auth_events": {"SELECT": {"at"}, "DELETE": {ALL}},
+    },
+    # CR-022: admin endpoints that write; no health table, credential or key.
+    "lifeos_admin": {
+        "users": {"SELECT": {"id", "email", "display_name", "deleted_at"}},
+        "invites": {"SELECT": "* - token_hash", "INSERT": ALL, "UPDATE": {"revoked_at"}},
+        "sessions": {"SELECT": {"id", "user_id", "revoked_at"}, "UPDATE": {"revoked_at"}},
+        "auth_challenges": {
+            "SELECT": {"user_id", "purpose", "invite_id", "used_at"},
+            "UPDATE": {"used_at"},
+        },
+        "audit_log": {"INSERT": ALL},
+        "outbox_events": {"INSERT": {"user_id", "topic", "body"}},
     },
     "lifeos_dispatcher": {
         "reminders": {"SELECT": ALL, "UPDATE": {"status", "attempts", "sent_at", "fire_at"}},
@@ -320,6 +346,10 @@ async def test_policies_are_exactly_the_expected_set(db: asyncpg.Connection) -> 
         ("push_subscriptions", "dispatcher_all", ("lifeos_dispatcher",)),
         ("user_settings", "dispatcher_read", ("lifeos_dispatcher",)),
         ("users", "dispatcher_read", ("lifeos_dispatcher",)),
+        ("users", "admin_write", ("lifeos_admin",)),
+        ("sessions", "admin_write_read", ("lifeos_admin",)),
+        ("sessions", "admin_write_revoke", ("lifeos_admin",)),
+        ("outbox_events", "admin_notice", ("lifeos_admin",)),
     }
     assert actual == expected
 
@@ -334,3 +364,64 @@ async def test_dispatcher_can_run_the_10_3_claim_query(db: asyncpg.Connection) -
         " ORDER BY fire_at FOR UPDATE SKIP LOCKED LIMIT 200"
     )
     assert len({row["user_id"] for row in claimed}) >= 2
+
+
+async def test_the_admin_write_role_queues_only_security_notices(db: asyncpg.Connection) -> None:
+    """CR-022: lifeos_admin may insert outbox events of one topic only."""
+    user = await create_user(db, f"notice-{uuid.uuid4()}@example.test")
+    await as_role(db, "lifeos_admin")
+    await db.execute(
+        "INSERT INTO outbox_events (user_id, topic, body)"
+        " VALUES ($1, 'auth.security_notice', '{}')",
+        user,
+    )
+    with pytest.raises(asyncpg.InsufficientPrivilegeError):
+        await db.execute(
+            "INSERT INTO outbox_events (user_id, topic, body)"
+            " VALUES ($1, 'daily_log.flow_changed', '{}')",
+            user,
+        )
+
+
+@pytest.mark.parametrize("table", ["daily_logs", "health_profile", "notes", "password_credentials"])
+async def test_the_admin_write_role_cannot_read_health_or_secrets(
+    db: asyncpg.Connection, table: str
+) -> None:
+    await as_role(db, "lifeos_admin")
+    assert await denied(db, f"SELECT 1 FROM {table} LIMIT 1")  # noqa: S608
+
+
+async def test_the_admin_write_role_cannot_undo_a_revocation(db: asyncpg.Connection) -> None:
+    """CR-022: revoke only — a revoked session or invite, or a spent challenge, stays so."""
+    user = await create_user(db, f"undo-{uuid.uuid4()}@example.test")
+    session, invite, challenge = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    await db.execute(
+        "INSERT INTO sessions (id, user_id, token_hash, expires_at, revoked_at)"
+        " VALUES ($1, $2, $3, now() + interval '1 day', now())",
+        session,
+        user,
+        uuid.uuid4().bytes,
+    )
+    await db.execute(
+        "INSERT INTO invites (id, token_hash, created_by, expires_at, revoked_at)"
+        " VALUES ($1, $2, $3, now() + interval '1 day', now())",
+        invite,
+        uuid.uuid4().bytes,
+        user,
+    )
+    await db.execute(
+        "INSERT INTO auth_challenges (id, purpose, challenge, user_id, expires_at, used_at)"
+        " VALUES ($1, 'add_passkey', $2, $3, now() + interval '5 minutes', now())",
+        challenge,
+        b"c",
+        user,
+    )
+    await as_role(db, "lifeos_admin")
+    for query, row in (
+        ("UPDATE sessions SET revoked_at = NULL WHERE id = $1", session),
+        ("UPDATE invites SET revoked_at = NULL WHERE id = $1", invite),
+        ("UPDATE auth_challenges SET used_at = NULL WHERE id = $1", challenge),
+    ):
+        with pytest.raises(asyncpg.InsufficientPrivilegeError):
+            async with db.transaction():
+                await db.execute(query, row)

@@ -68,3 +68,19 @@ async def test_requests_from_another_api_process_count_too(env: AuthEnv, token: 
         second.cookies.set("lo_session", token, domain=RP_ID)
         assert second.get("/api/v1/_test/whoami").status_code == 200
         assert second.get("/api/v1/_test/whoami").status_code == 429
+
+
+async def test_an_over_limit_session_cannot_fall_through_to_recovery(
+    env: AuthEnv, token: str
+) -> None:
+    """Over the 9.1 limit, `/auth/passkeys/verify` refuses (429); it does not treat the request as
+    cookie-less and mint a new session from this session's pending challenge."""
+    options = env.post("/auth/passkeys/options", {}).json()
+    for _ in range(LIMIT):
+        env.whoami()
+    credential = env.authenticator.create(options)
+    response = env.post("/auth/passkeys/verify", {"credential": credential})
+    assert response.status_code == 429
+    assert env.session_token() == token
+    count = "SELECT count(*) FROM sessions WHERE revoked_at IS NULL"
+    assert await env.db.fetchval(count) == 1
