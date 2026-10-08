@@ -1,0 +1,44 @@
+/* Opaque, above every layer (Sheet 10, Dialog 20): nothing of the app shows through (11.6). */
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6) var(--space-5) calc(var(--space-6) + var(--size-safe-bottom));
+  background-color: var(--bg);
+  color: var(--ink);
+  overflow-y: auto;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: stretch;
+  width: 100%;
+  max-width: var(--size-dialog-max);
+}
+
+.badge {
+  display: inline-flex;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-touch-target);
+  height: var(--size-touch-target);
+  border-radius: var(--radius-chip);
+  background-color: var(--accent);
+  color: var(--accent-ink); /* "accent-ink on accent" */
+}
+
+.title {
+  text-align: center;
+}
+
+.pin {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

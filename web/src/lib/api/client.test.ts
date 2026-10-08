@@ -144,4 +144,48 @@ describe('apiRequest details', () => {
     expect((error as ApiError).status).toBe(502);
     expect((error as ApiError).title).toBe('Bad Gateway');
   });
+
+  it('[AUTH-7] keeps Retry-After (seconds) so a lockout can say how long to wait', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ title: 'Too Many Requests', detail: 'later' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/problem+json', 'Retry-After': '840' },
+      }),
+    );
+    const error = await apiRequest('GET', '/api/v1/healthz').catch((e: unknown) => e);
+    expect((error as ApiError).retryAfterS).toBe(840);
+  });
+
+  it('ignores a missing or unreadable Retry-After', async () => {
+    fetchMock.mockResolvedValue(
+      new Response('{}', {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': 'soon' },
+      }),
+    );
+    const error = await apiRequest('GET', '/api/v1/healthz').catch((e: unknown) => e);
+    expect((error as ApiError).retryAfterS).toBeUndefined();
+  });
+
+  it('fills path parameters, encoded', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+    await apiRequest('DELETE', '/api/v1/auth/sessions/{session_id}', undefined, {
+      session_id: 'a/b c',
+    });
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/v1/auth/sessions/a%2Fb%20c');
+  });
+
+  it('refuses a path with a parameter left unfilled', async () => {
+    await expect(apiRequest('DELETE', '/api/v1/auth/sessions/{session_id}')).rejects.toThrow(
+      'session_id',
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each(['', '.', '..'])('refuses %j as a path parameter (no dot segments)', async (value) => {
+    await expect(
+      apiRequest('DELETE', '/api/v1/auth/sessions/{session_id}', undefined, { session_id: value }),
+    ).rejects.toThrow('session_id');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

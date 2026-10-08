@@ -54,4 +54,22 @@ describe('TextField (spec 5.5)', () => {
     );
     await expectNoAxeViolations(container);
   });
+
+  it('a code field opens the number pad and limits its length (AUTH-3, AUTH-6)', () => {
+    render(
+      <TextField
+        label="Code"
+        name="totp"
+        value=""
+        inputMode="numeric"
+        maxLength={6}
+        autoComplete="one-time-code"
+        onChange={() => undefined}
+      />,
+    );
+    const input = screen.getByRole('textbox', { name: 'Code' }) as HTMLInputElement;
+    expect(input.inputMode).toBe('numeric');
+    expect(input.maxLength).toBe(6);
+    expect(input.autocomplete).toBe('one-time-code');
+  });
 });

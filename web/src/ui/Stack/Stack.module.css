@@ -80,3 +80,7 @@
 .stack[data-justify='between'] {
   justify-content: space-between;
 }
+
+.stack[data-inset='page'] {
+  padding: var(--space-6) var(--space-5) calc(var(--space-6) + var(--size-safe-bottom));
+}

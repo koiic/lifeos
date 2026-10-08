@@ -13,16 +13,22 @@
     "size": "size-limit",
     "ladle": "ladle serve",
     "ladle:build": "ladle build",
-    "test:e2e": "ladle build && playwright test"
+    "test:e2e": "ladle build && vite build && playwright test"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "5.3.0",
     "@fontsource-variable/dm-sans": "5.3.0",
     "@fontsource-variable/fraunces": "5.3.0",
+    "@simplewebauthn/browser": "14.0.0",
     "@tanstack/react-query": "5.104.1",
+    "date-fns": "4.4.0",
+    "date-fns-tz": "3.2.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router-dom": "6.30.6"
+    "react-hook-form": "7.89.0",
+    "react-router-dom": "6.30.6",
+    "zod": "4.6.5",
+    "zustand": "5.0.15"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

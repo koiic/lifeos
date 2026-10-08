@@ -137,4 +137,17 @@ describe('Button (spec 5.5: primary, secondary, ghost, danger, icon)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Saving' }));
     expect(onSubmit).not.toHaveBeenCalled();
   });
+
+  it('with an href it is a link that looks like a button (e.g. open another app)', async () => {
+    const { container } = render(
+      <Button variant="secondary" icon="key" href="otpauth://totp/x?secret=ABC">
+        Open my authenticator app
+      </Button>,
+    );
+    const link = screen.getByRole('link', { name: 'Open my authenticator app' });
+    expect(link.getAttribute('href')).toBe('otpauth://totp/x?secret=ABC');
+    expect(link.dataset.variant).toBe('secondary');
+    expect(screen.queryByRole('button')).toBeNull();
+    await expectNoAxeViolations(container);
+  });
 });

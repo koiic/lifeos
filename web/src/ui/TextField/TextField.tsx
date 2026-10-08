@@ -8,6 +8,9 @@ export interface TextFieldProps extends FieldText {
   type?: 'text' | 'email' | 'password' | 'tel' | 'number';
   required?: boolean;
   autoComplete?: string;
+  /** `numeric` opens the number pad (codes, PINs) without the quirks of type="number". */
+  inputMode?: 'text' | 'email' | 'numeric';
+  maxLength?: number;
 }
 
 /** Spec 5.5: a labelled single-line field with an optional hint and error. */
@@ -18,6 +21,8 @@ export function TextField({
   type = 'text',
   required = false,
   autoComplete,
+  inputMode,
+  maxLength,
   ...text
 }: TextFieldProps) {
   return (
@@ -31,6 +36,8 @@ export function TextField({
           value={value}
           required={required}
           autoComplete={autoComplete}
+          inputMode={inputMode}
+          maxLength={maxLength}
           onChange={(event) => onChange(event.target.value)}
         />
       )}

@@ -19,3 +19,11 @@ export const Row: Story = () => (
     <Card>Right</Card>
   </Stack>
 );
+
+/** A whole screen's padding (screens use `as="main"`; Ladle already wraps stories in main). */
+export const Page: Story = () => (
+  <Stack inset="page" gap={4}>
+    <h1>Security</h1>
+    <p>Page padding clears the screen edges and the iPhone home indicator.</p>
+  </Stack>
+);

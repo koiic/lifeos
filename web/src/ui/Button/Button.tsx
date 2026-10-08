@@ -25,10 +25,29 @@ interface IconButtonProps extends Common {
   label: string;
 }
 
-export type ButtonProps = TextButtonProps | IconButtonProps;
+/** A link that looks like a button: for leaving the app (e.g. opening the authenticator app). */
+interface LinkButtonProps {
+  href: string;
+  variant?: 'primary' | 'secondary' | 'ghost';
+  icon?: IconName;
+  children: ReactNode;
+}
 
-/** Spec 5.5: primary, secondary, ghost, danger and icon buttons; real `<button>`s (5.8). */
+export type ButtonProps = TextButtonProps | IconButtonProps | LinkButtonProps;
+
+/**
+ * Spec 5.5: primary, secondary, ghost, danger and icon buttons; real `<button>`s (5.8), or a real
+ * link when it goes somewhere (`href`).
+ */
 export function Button(props: ButtonProps) {
+  if ('href' in props) {
+    return (
+      <a className={styles.button} data-variant={props.variant ?? 'primary'} href={props.href}>
+        {props.icon !== undefined && <Icon name={props.icon} size="sm" />}
+        {props.children}
+      </a>
+    );
+  }
   const { type = 'button', disabled = false, busy = false, onClick } = props;
   const variant = props.variant ?? 'primary';
   return (

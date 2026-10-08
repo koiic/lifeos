@@ -1,29 +1,79 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { copy } from '../copy/en-GB';
+import { REASON } from '../lib/auth/session';
+import { fakeApi, problem } from '../lib/testing/fakeApi';
 import { routes } from './router';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+const SESSIONS = 'GET /api/v1/auth/sessions';
+// Lazy routes import their screen chunk first; under coverage instrumentation that takes longer
+// than Testing Library's default 1 s wait.
+const LAZY = { timeout: 5_000 };
+const signedIn = () => fakeApi({ [SESSIONS]: { body: { items: [], next_cursor: null } } });
+
+function renderAt(url: string) {
+  const router = createMemoryRouter(routes, { initialEntries: [url] });
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+  return router;
+}
+
+function child(path: string) {
+  const walk = (list: typeof routes): (typeof routes)[number] | undefined => {
+    for (const route of list) {
+      if (route.path === path) return route;
+      const found = walk(route.children ?? []);
+      if (found) return found;
+    }
+    return undefined;
+  };
+  return walk(routes);
+}
 
 describe('router', () => {
-  it('redirects / to /today and loads the Today route lazily', async () => {
-    const router = createMemoryRouter(routes, { initialEntries: ['/'] });
-    render(<RouterProvider router={router} />);
-    expect(await screen.findByRole('heading', { name: copy.today.title })).toBeDefined();
+  it('redirects / to /today and loads the Today route lazily when signed in', async () => {
+    signedIn();
+    const router = renderAt('/');
+    expect(await screen.findByRole('heading', { name: copy.today.title }, LAZY)).toBeDefined();
     expect(router.state.location.pathname).toBe('/today');
   });
 
-  it('declares the Today route as lazy (code-split)', () => {
-    const root = routes[0];
-    const today = root?.children?.find((route) => route.path === 'today');
-    expect(today?.lazy).toBeTypeOf('function');
+  it('declares every screen route as lazy (code-split)', () => {
+    for (const path of ['today', 'register', 'signin', 'recover', 'settings/security']) {
+      expect(child(path)?.lazy, path).toBeTypeOf('function');
+    }
+  });
+
+  it('[AUTH-5] signed-in screens send a signed-out visitor to sign-in', async () => {
+    fakeApi({ [SESSIONS]: problem(401, REASON.notSignedIn) });
+    // Today: a light signed-in route (the screen chunk is small), so this tests the wiring.
+    const router = renderAt('/today?from=link');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/signin'), LAZY);
+    expect(router.state.location.search).toBe(`?next=${encodeURIComponent('/today?from=link')}`);
+  });
+
+  it('the sign-in screen is open to a signed-out visitor', async () => {
+    fakeApi({});
+    renderAt('/signin');
+    expect(
+      await screen.findByRole('heading', { name: copy.auth.signIn.title }, LAZY),
+    ).toBeDefined();
   });
 
   it('shows the error boundary for unknown routes', async () => {
-    const router = createMemoryRouter(routes, { initialEntries: ['/no-such-page'] });
-    render(<RouterProvider router={router} />);
+    renderAt('/no-such-page');
     expect(await screen.findByRole('heading', { name: copy.errors.title })).toBeDefined();
   });
 });

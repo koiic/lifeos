@@ -5,12 +5,14 @@ import styles from './Stack.module.css';
 export type Space = 1 | 2 | 3 | 4 | 5 | 6 | 8 | 10;
 
 export interface StackProps {
-  as?: 'div' | 'section' | 'ul' | 'ol' | 'header' | 'footer' | 'form';
+  as?: 'div' | 'section' | 'ul' | 'ol' | 'header' | 'footer' | 'form' | 'main';
   direction?: 'column' | 'row';
   gap?: Space;
   align?: 'start' | 'center' | 'end' | 'stretch';
   justify?: 'start' | 'center' | 'end' | 'between';
   wrap?: boolean;
+  /** `page`: the padding of a whole screen, clear of the iPhone home indicator. */
+  inset?: 'none' | 'page';
   children: ReactNode;
 }
 
@@ -22,6 +24,7 @@ export function Stack({
   align = 'stretch',
   justify = 'start',
   wrap = false,
+  inset = 'none',
   children,
 }: StackProps) {
   return (
@@ -32,6 +35,7 @@ export function Stack({
       data-align={align}
       data-justify={justify}
       data-wrap={wrap}
+      data-inset={inset}
     >
       {children}
     </Element>

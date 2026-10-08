@@ -40,4 +40,24 @@ describe('Stack (layout primitive, plan 5.2)', () => {
     expect(div.dataset.align).toBe('center');
     expect(div.dataset.justify).toBe('between');
   });
+
+  it('can be the page itself: a main landmark with page padding', () => {
+    const { container } = render(
+      <Stack as="main" inset="page">
+        <p>Content</p>
+      </Stack>,
+    );
+    const main = container.querySelector('main');
+    expect(main).not.toBeNull();
+    expect(main?.dataset.inset).toBe('page');
+  });
+
+  it('has no inset by default', () => {
+    const { container } = render(
+      <Stack>
+        <p>Content</p>
+      </Stack>,
+    );
+    expect((container.firstElementChild as HTMLElement).dataset.inset).toBe('none');
+  });
 });

@@ -48,3 +48,16 @@ export const BusySubmit: Story = () => {
     </form>
   );
 };
+
+/** A link that looks like a button (it goes somewhere, e.g. another app). */
+export const Links: Story = () => (
+  <Stack gap={3} align="start">
+    <Button href="otpauth://totp/Life%20OS?secret=EXAMPLE">Open my authenticator app</Button>
+    <Button variant="secondary" icon="key" href="otpauth://totp/Life%20OS?secret=EXAMPLE">
+      Open my authenticator app
+    </Button>
+    <Button variant="ghost" href="/signin">
+      Back to sign in
+    </Button>
+  </Stack>
+);

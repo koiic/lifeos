@@ -26,6 +26,15 @@ const ICONS = {
   clock: [<circle key="a" cx="12" cy="12" r="9" />, <path key="b" d="M12 7v5l3 2" />],
   trash: [<path key="a" d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />],
   edit: [<path key="a" d="M4 20h4L19 9l-4-4L4 16z" />],
+  lock: [
+    <rect key="a" x="5" y="11" width="14" height="10" rx="2" />,
+    <path key="b" d="M8 11V8a4 4 0 0 1 8 0v3" />,
+  ],
+  key: [<circle key="a" cx="8" cy="15" r="4" />, <path key="b" d="M11 12l8-8M16 7l2 2M14 9l2 2" />],
+  copy: [
+    <rect key="a" x="8" y="8" width="12" height="12" rx="2" />,
+    <path key="b" d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />,
+  ],
   more: [<path key="a" d="M6 12h.01M12 12h.01M18 12h.01" />],
 } satisfies Record<string, ReactElement[]>;
 
