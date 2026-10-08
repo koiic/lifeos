@@ -2,7 +2,7 @@
 
 - Raised by: Claude Code during T08
 - Date: 2026-10-08
-- Status: proposed
+- Status: approved (spec re-sync pending)
 
 ## Problem
 
@@ -46,4 +46,7 @@ expire) for the admin console.
 
 ## Decision (Ibrahim)
 
-Pending.
+Approved by Ibrahim, 2026-10-08: option 1 (`invites.recover_user_id`: null for registration invites, the account for recovery invites). Until the spec is re-synced this CR is the
+governing text for the sections it changes.
+
+Still to do (Ibrahim): update the spec, re-export, commit `docs: sync spec vN (CR-018)`.

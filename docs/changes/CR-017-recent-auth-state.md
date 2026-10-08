@@ -2,7 +2,7 @@
 
 - Raised by: Claude Code during T08
 - Date: 2026-10-08
-- Status: proposed
+- Status: approved (spec re-sync pending)
 
 ## Problem
 
@@ -44,4 +44,7 @@ Option 1: one nullable column, per-session and simple to check, and both sign-in
 
 ## Decision (Ibrahim)
 
-Pending.
+Approved by Ibrahim, 2026-10-08: option 1 (`sessions.reauth_at`, per session; set at sign-in and by `/auth/reauth/verify`, which accepts a passkey or `{password, totp}`). Until the spec is re-synced this CR is the
+governing text for the sections it changes.
+
+Still to do (Ibrahim): update the spec, re-export, commit `docs: sync spec vN (CR-017)`.
