@@ -2,7 +2,7 @@
 
 - Raised by: Claude Code during T07
 - Date: 2026-10-07
-- Status: proposed
+- Status: approved (spec re-sync pending)
 
 ## Problem
 
@@ -50,4 +50,7 @@ the admin can delete it (T44) before issuing a new invite.
 
 ## Decision (Ibrahim)
 
-Pending.
+Approved by Ibrahim, 2026-10-07: option 1 (inactive session: the account is active once it has a passkey or a confirmed TOTP; until then its session can only call `/auth/totp/confirm`). Until the spec is re-synced this CR is the governing text
+for the sections it changes.
+
+Still to do (Ibrahim): update the spec, re-export, commit `docs: sync spec vN (CR-014)`.

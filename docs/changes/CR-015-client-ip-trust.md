@@ -2,7 +2,7 @@
 
 - Raised by: Claude Code during T07
 - Date: 2026-10-07
-- Status: proposed
+- Status: approved (spec re-sync pending)
 
 ## Problem
 
@@ -46,4 +46,7 @@ check is simple and testable, and it avoids a runtime dependency on fetching Clo
 
 ## Decision (Ibrahim)
 
-Pending.
+Approved by Ibrahim, 2026-10-07: option 2 (network trust: outside local the API reads `CF-Connecting-IP` and refuses requests without it; T15 keeps the API port unpublished). Until the spec is re-synced this CR is the governing text
+for the sections it changes.
+
+Still to do (Ibrahim): update the spec, re-export, commit `docs: sync spec vN (CR-015)`.
