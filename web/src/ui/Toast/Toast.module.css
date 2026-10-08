@@ -19,3 +19,12 @@
   flex: 1;
   font-weight: var(--font-weight-body-strong);
 }
+
+/* App-wide: fixed at the bottom, clear of the iPhone home indicator. No layer of its own: it is
+   rendered after the page (so above it) and stays under sheets, dialogs and the lock screen. */
+.toast[data-placement='floating'] {
+  position: fixed;
+  right: var(--space-4);
+  bottom: calc(var(--space-4) + var(--size-safe-bottom));
+  left: var(--space-4);
+}

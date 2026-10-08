@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { copy } from '../../copy/en-GB';
 import { api, ApiError } from '../../lib/api';
 import { startSession } from '../../lib/auth/session';
+import { needsInstallGuide } from '../../lib/install/install';
 import { createPasskey } from '../../lib/auth/webauthn';
 import { bindField } from '../../lib/forms/bindField';
 import { zodResolver } from '../../lib/forms/zodResolver';
@@ -185,7 +186,8 @@ export function RegisterScreen() {
 
   const finish = () => {
     startSession(queryClient);
-    navigate('/today', { replace: true });
+    // J1 step 3: in a browser tab, the install guide comes next (ONB-1).
+    navigate(needsInstallGuide() ? '/install' : '/today', { replace: true });
   };
 
   if (step.kind === 'codes') return <RecoveryCodesStep codes={step.codes} onDone={finish} />;

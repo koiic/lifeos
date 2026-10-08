@@ -17,6 +17,7 @@ paths = [
   '''^web/build/''',
   '''^web/test-results/''',
   '''^web/playwright-report/''',
+  '''^web/\.lighthouseci/''',
   '''^\.git/''',
 ]
 

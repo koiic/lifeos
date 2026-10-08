@@ -35,6 +35,17 @@ const ICONS = {
     <rect key="a" x="8" y="8" width="12" height="12" rx="2" />,
     <path key="b" d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />,
   ],
+  // iOS Safari's Share button: a box with an arrow up out of it.
+  share: [
+    <path key="a" d="M12 3v12M8 7l4-4 4 4" />,
+    <path key="b" d="M8 10H6a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1h-2" />,
+  ],
+  addToHome: [
+    <rect key="a" x="4" y="4" width="16" height="16" rx="3" />,
+    <path key="b" d="M12 8.5v7M8.5 12h7" />,
+  ],
+  // A browser's menu: three dots stacked.
+  menu: [<path key="a" d="M12 6h.01M12 12h.01M12 18h.01" />],
   more: [<path key="a" d="M6 12h.01M12 12h.01M18 12h.01" />],
 } satisfies Record<string, ReactElement[]>;
 
@@ -52,6 +63,7 @@ export function Icon({ name, size = 'md' }: IconProps) {
     <svg
       className={styles.icon}
       data-size={size}
+      data-icon={name}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

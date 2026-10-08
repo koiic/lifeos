@@ -13,7 +13,8 @@
     "size": "size-limit",
     "ladle": "ladle serve",
     "ladle:build": "ladle build",
-    "test:e2e": "ladle build && vite build && playwright test"
+    "test:e2e": "ladle build && vite build && playwright test",
+    "lighthouse": "vite build && CHROME_PATH=$(node -e \"console.log(require('playwright').chromium.executablePath())\") lhci autorun"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "5.3.0",
@@ -27,6 +28,9 @@
     "react-dom": "18.3.1",
     "react-hook-form": "7.89.0",
     "react-router-dom": "6.30.6",
+    "workbox-precaching": "7.4.1",
+    "workbox-routing": "7.4.1",
+    "workbox-window": "7.4.1",
     "zod": "4.6.5",
     "zustand": "5.0.15"
   },
@@ -36,6 +40,7 @@
     "@commitlint/config-conventional": "21.2.3",
     "@eslint/js": "9.39.5",
     "@ladle/react": "5.1.1",
+    "@lhci/cli": "0.15.1",
     "@playwright/test": "1.64.0",
     "@size-limit/file": "14.1.0",
     "@testing-library/react": "15.0.7",
@@ -60,6 +65,8 @@
     "typescript": "5.9.3",
     "typescript-eslint": "8.71.1",
     "vite": "8.3.3",
-    "vitest": "5.0.3"
+    "vite-plugin-pwa": "2.0.0",
+    "vitest": "5.0.3",
+    "workbox-build": "7.4.1"
   }
 }

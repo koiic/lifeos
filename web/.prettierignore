@@ -4,6 +4,7 @@ dist/
 build/
 test-results/
 playwright-report/
+.lighthouseci/
 tests/visual/**/*.png
 package-lock.json
 # Generated (plan 5.1, 4.4)

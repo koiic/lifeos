@@ -8,12 +8,26 @@ export interface ToastProps {
   action?: { label: string; onClick: () => void };
   dismissLabel: string;
   onDismiss: () => void;
+  /** `floating`: above the page at the bottom (app-wide messages); `inline` (default): in place. */
+  placement?: 'inline' | 'floating';
 }
 
 /** Spec 5.5: a short message; errors are announced as alerts, the rest politely. */
-export function Toast({ message, tone = 'info', action, dismissLabel, onDismiss }: ToastProps) {
+export function Toast({
+  message,
+  tone = 'info',
+  action,
+  dismissLabel,
+  onDismiss,
+  placement = 'inline',
+}: ToastProps) {
   return (
-    <div className={styles.toast} data-tone={tone} role={tone === 'danger' ? 'alert' : 'status'}>
+    <div
+      className={styles.toast}
+      data-tone={tone}
+      data-placement={placement}
+      role={tone === 'danger' ? 'alert' : 'status'}
+    >
       <Icon name={tone === 'danger' ? 'alert' : tone === 'success' ? 'check' : 'info'} size="sm" />
       <p className={styles.message}>{message}</p>
       {action !== undefined && (

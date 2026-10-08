@@ -81,6 +81,13 @@ async function signInWithRecoveryCode(page: Page, email: string, code: string) {
   await page.getByRole('button', { name: signIn.recoverySubmit }).click();
 }
 
+/** [ONB-1] J1 step 3: in a browser tab the install guide comes next; she carries on in the tab. */
+async function carryOnInBrowser(page: Page) {
+  await expect(page.getByRole('heading', { name: copy.install.title })).toBeVisible();
+  await page.getByRole('button', { name: copy.install.continue }).click();
+  await expect(page.getByRole('heading', { name: copy.today.title })).toBeVisible();
+}
+
 async function registerWithPasskey(page: Page, token: string) {
   await page.goto(`/register?token=${token}`);
   await page.getByLabel(reg.name).fill('Zee');
@@ -90,7 +97,7 @@ async function registerWithPasskey(page: Page, token: string) {
   await expect(codes.getByRole('listitem')).toHaveCount(10);
   const recoveryCodes = await codes.getByRole('listitem').allTextContents();
   await page.getByRole('button', { name: copy.auth.codes.done }).click();
-  await expect(page.getByRole('heading', { name: copy.today.title })).toBeVisible();
+  await carryOnInBrowser(page);
   return recoveryCodes;
 }
 
@@ -123,6 +130,17 @@ async function freshCode(page: Page, secret: string, usedAt: number): Promise<st
 }
 
 test.describe('auth journeys (J1, J11)', () => {
+  // Each journey is its own phone on its own network (addresses reserved for testing; the local API honours
+  // CF-Connecting-IP, CR-015), so the failures one journey makes on purpose do not count towards
+  // another's AUTH-7 lockout (5 failed sign-ins per 15 minutes per IP) when they run in parallel.
+  test.beforeEach(async ({ context }, testInfo) => {
+    // One address per test line in 198.18.0.0/15 (reserved for testing): unique in this file.
+    const line = testInfo.line;
+    await context.setExtraHTTPHeaders({
+      'CF-Connecting-IP': `198.18.${String(Math.floor(line / 256))}.${String(line % 256)}`,
+    });
+  });
+
   test('[AUTH-1] an invite link that is not valid shows why', async ({ page }) => {
     await page.goto('/register?token=not-a-real-invite');
     await expect(page.getByText(reg.invalidTitle)).toBeVisible();
@@ -212,7 +230,9 @@ test.describe('auth journeys (J1, J11)', () => {
     // (Run after the steps that use the phone's passkey: the two simulated authenticators'
     // signature counters drift apart once the copy is used, and the server rightly refuses a
     // counter that goes back (12.3); real synced passkeys report 0.)
-    const laptop: BrowserContext = await browser.newContext();
+    const laptop: BrowserContext = await browser.newContext({
+      extraHTTPHeaders: { 'CF-Connecting-IP': '198.51.100.7' }, // the laptop's own network
+    });
     const laptopPage = await laptop.newPage();
     await copyPasskeys(phone, await addAuthenticator(laptopPage));
     await laptopPage.goto('/signin');
@@ -275,7 +295,7 @@ test.describe('auth journeys (J1, J11)', () => {
     await expect(codes.getByRole('listitem')).toHaveCount(10);
     const [firstCode, secondCode] = await codes.getByRole('listitem').allTextContents();
     await page.getByRole('button', { name: copy.auth.codes.done }).click();
-    await expect(page.getByRole('heading', { name: copy.today.title })).toBeVisible();
+    await carryOnInBrowser(page);
 
     // [AUTH-3] Sign out; sign in with password and the next code (a code is used once).
     await page.goto('/settings/security');

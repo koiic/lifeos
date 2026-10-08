@@ -57,4 +57,20 @@ describe('Toast (spec 5.5)', () => {
       vi.useRealTimers();
     }
   });
+
+  it('can float above the page (app-wide messages), or sit in the flow (default)', () => {
+    const { rerender } = render(
+      <Toast message="Saved" dismissLabel="Dismiss" onDismiss={() => undefined} />,
+    );
+    expect((screen.getByRole('status') as HTMLElement).dataset.placement).toBe('inline');
+    rerender(
+      <Toast
+        message="Saved"
+        placement="floating"
+        dismissLabel="Dismiss"
+        onDismiss={() => undefined}
+      />,
+    );
+    expect((screen.getByRole('status') as HTMLElement).dataset.placement).toBe('floating');
+  });
 });

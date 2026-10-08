@@ -33,6 +33,7 @@ test('every base component has at least one story', async ({ page }) => {
       'errorstate',
       'fab',
       'icon',
+      'installguide',
       'layout--grid',
       'layout--stack',
       'lockscreen',

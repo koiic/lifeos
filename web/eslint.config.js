@@ -105,6 +105,7 @@ export default tseslint.config(
       'build/',
       'test-results/',
       'playwright-report/',
+      '.lighthouseci/',
       // Generated files (plan 5.1, 4.4); their generators are checked instead.
       'src/ui/tokens.ts',
       'src/lib/api/schema.d.ts',

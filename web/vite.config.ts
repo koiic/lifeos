@@ -1,14 +1,34 @@
 import react from '@vitejs/plugin-react';
+import { type ManifestOptions, VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vitest/config';
 
 import pkg from './package.json' with { type: 'json' };
+import { manifest } from './pwa.manifest.ts';
 
 // `/api` goes to the local API, as the Pages Function forwards it in production (ADR-0001). The
 // e2e stack sets LIFEOS_API to its own port (tests/journeys/stack.ts).
 const apiProxy = { '/api': process.env['LIFEOS_API'] ?? 'http://127.0.0.1:8000' };
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Spec 11.3: our own service worker (src/sw.ts), the 11.2 manifest, updates on her say-so.
+    VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      registerType: 'prompt',
+      injectRegister: false,
+      // Exactly spec 11.2: the plugin would otherwise add `lang: "en"`. An explicit undefined
+      // overrides its default and is dropped when the manifest is written as JSON.
+      manifest: { ...manifest, lang: undefined } as unknown as Partial<ManifestOptions>,
+      injectManifest: {
+        // The app shell, route chunks, fonts and icons (11.3); Ladle and test output never ship.
+        globPatterns: ['**/*.{js,css,html,woff2,png,webmanifest}'],
+      },
+      devOptions: { enabled: false },
+    }),
+  ],
   server: { proxy: apiProxy },
   preview: { proxy: apiProxy },
   define: {

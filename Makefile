@@ -60,6 +60,7 @@ api-contract:
 tokens:
 	python3 scripts/build_tokens.py --check
 	python3 scripts/check_contrast.py
+	python3 scripts/build_icons.py --check
 
 trace:
 	python3 scripts/trace.py

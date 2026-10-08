@@ -15,7 +15,8 @@
     "skipLibCheck": true,
     "noEmit": true,
     "types": [],
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true
   },
-  "include": ["src", "vite.config.ts", "playwright.config.ts", "tests", ".ladle"]
+  "include": ["src", "vite.config.ts", "pwa.manifest.ts", "playwright.config.ts", "tests", ".ladle"]
 }

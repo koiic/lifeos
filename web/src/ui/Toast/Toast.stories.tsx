@@ -1,5 +1,6 @@
 import type { Story } from '@ladle/react';
 
+import { copy } from '../../copy/en-GB';
 import { Stack } from '../Stack';
 import { Toast } from './Toast';
 
@@ -14,8 +15,8 @@ export const Tones: Story = () => (
       onDismiss={() => undefined}
     />
     <Toast
-      message="A new version is ready"
-      action={{ label: 'Reload', onClick: () => undefined }}
+      message={copy.update.ready}
+      action={{ label: copy.update.refresh, onClick: () => undefined }}
       dismissLabel="Dismiss"
       onDismiss={() => undefined}
     />
@@ -26,4 +27,15 @@ export const Tones: Story = () => (
       onDismiss={() => undefined}
     />
   </Stack>
+);
+
+/** App-wide (spec 11.3's update prompt): fixed at the bottom, above the page. */
+export const Floating: Story = () => (
+  <Toast
+    placement="floating"
+    message={copy.update.ready}
+    action={{ label: copy.update.refresh, onClick: () => undefined }}
+    dismissLabel={copy.common.dismiss}
+    onDismiss={() => undefined}
+  />
 );

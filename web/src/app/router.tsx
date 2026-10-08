@@ -55,6 +55,15 @@ export const routes: RouteObject[] = [
         },
       },
       {
+        // ONB-1, J1 step 3: no data on it, so it works before and after signing in.
+        path: 'install',
+        handle: handle('/install'),
+        lazy: async () => {
+          const { InstallScreen } = await import('../features/onboarding/InstallScreen');
+          return { Component: InstallScreen };
+        },
+      },
+      {
         element: <SignedIn />,
         handle: handle('/'),
         children: [

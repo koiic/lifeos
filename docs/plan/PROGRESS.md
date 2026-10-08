@@ -22,7 +22,7 @@ Spec version: 1 · Plan version: 1
 | T10 | Web scaffold: router, query client, generated API client, error boundary | — | T01 | done | d655afd | make verify green (exit 0, Postgres 16): 322 server tests (78 new), web 31 tests (lib/api 100% lines), initial JS 73.4 kB/250 kB, ESLint boundaries tested at any depth, api-contract regenerated, trace 0 errors, gitleaks clean; 4 reviewers CHANGES REQUIRED -> all findings fixed or answered (T10.md); T07 follow-up: key client-error limit on client IP |
 | T11 | Design system foundation: tokens, fonts, themes, base components | — | T10 | done | 4efd551 | 19 ui primitives, fonts, themes; verify green (server 1123, web 127), e2e 13 (58 snapshots, behaviour checks); CR-023/CR-024 applied; 3 review rounds closed |
 | T12 | Web auth flows: register, sign-in, fallback, recovery, lock screen, sessions | AUTH-1, AUTH-2, AUTH-3, AUTH-4, AUTH-5, AUTH-6 | T08, T11 | done | ee29c68 | Auth screens, app lock, Settings security; verify green (server 1129, web 274), verify-e2e 17 incl. 4 auth journeys on a real stack; CR-025; 4 reviews + closure fixed |
-| T13 | PWA: manifest, service worker, update prompt, install guide | ONB-1 | T11 | todo | | |
+| T13 | PWA: manifest, service worker, update prompt, install guide | ONB-1 | T11 | in_progress |  |  |
 | T14 | Web Push end to end: VAPID, subscriptions, test push, permission card | ONB-3 | T05, T13 | todo | | |
 | T15 | Infrastructure: VPS, Docker Compose, Cloudflare Pages, Pages Function proxy, Tunnel, Access, secrets | — | T02, T13 | blocked |  | blocked: CR-006: stale Caddy and infra layout in spec |
 | T16 | CI/CD: pipelines, staging deploy, production approval, scans, external-origin check | NFR-6 | T15 | todo | | |

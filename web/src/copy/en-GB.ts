@@ -111,6 +111,39 @@ export const copy = {
       },
     },
   },
+  install: {
+    title: 'Add Life OS to your Home Screen',
+    intro: 'It opens like an app, straight from your Home Screen.',
+    stepsLabel: 'How to add it',
+    steps: {
+      ios: [
+        'In Safari, tap the Share button (if you can’t see it, tap ••• first)',
+        'Scroll down and tap ‘Add to Home Screen’, then Add',
+        'Open Life OS from your Home Screen',
+      ],
+      iosOtherBrowser: [
+        'Open this page in Safari: on iPhone only Safari can add it to your Home Screen',
+        'In Safari, tap Share, then ‘Add to Home Screen’, then Add',
+        'Open Life OS from your Home Screen',
+      ],
+      android: [
+        'Tap the menu (three dots) at the top right of Chrome',
+        'Tap ‘Install app’ or ‘Add to Home screen’, then Install',
+        'Open Life OS from your Home screen',
+      ],
+      other: [
+        'Open your browser’s menu, or the install icon in the address bar',
+        'Choose to install the app or add it to your apps, if your browser offers it',
+        'Open Life OS from your apps',
+      ],
+    },
+    note: 'From now on, open Life OS from its icon. The browser tab keeps its own separate sign-in and settings.',
+    continue: 'Not now, carry on in the browser',
+  },
+  update: {
+    ready: 'New version ready',
+    refresh: 'Refresh',
+  },
   lock: {
     title: 'Life OS is locked',
     passkey: 'Unlock with passkey',

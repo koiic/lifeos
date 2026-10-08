@@ -79,7 +79,7 @@ describe('[AUTH-1] register: invite only', () => {
 });
 
 describe('[AUTH-2] [AUTH-4] register with a passkey', () => {
-  it('creates the passkey, then shows the recovery codes once, then goes to Today', async () => {
+  it('creates the passkey, then shows the recovery codes once, then the install guide', async () => {
     const options = { challenge: 'c', rp: { id: 'localhost' } };
     const api = fakeApi({
       [VERIFY_INVITE]: { body: { valid: true, email: 'zee@example.test' } },
@@ -111,9 +111,43 @@ describe('[AUTH-2] [AUTH-4] register with a passkey', () => {
       },
     ]);
 
+    // [ONB-1] J1 step 3: in a browser tab, the install guide comes next.
     fireEvent.click(screen.getByRole('button', { name: copy.auth.codes.done }));
-    expect((await screen.findByTestId('arrived')).textContent).toBe('/today');
+    expect((await screen.findByTestId('arrived')).textContent).toBe('/install');
   });
+
+  it.each(['installed', 'dismissed'] as const)(
+    '[ONB-1] guide already %s: straight to Today',
+    async (state) => {
+      if (state === 'installed') {
+        window.matchMedia = ((query: string) => ({
+          matches: query === '(display-mode: standalone)',
+          media: query,
+        })) as unknown as typeof window.matchMedia;
+      } else {
+        localStorage.setItem('lifeos.installDismissed', '1');
+      }
+      try {
+        fakeApi({
+          [VERIFY_INVITE]: { body: { valid: true, email: 'zee@example.test' } },
+          [OPTIONS]: { body: { challenge: 'c' } },
+          [VERIFY]: {
+            status: 201,
+            body: { user_id: 'u1', display_name: 'Zee', recovery_codes: CODES },
+          },
+        });
+        open();
+        await screen.findByLabelText(t.name);
+        type(t.name, 'Zee');
+        fireEvent.click(screen.getByRole('button', { name: t.createPasskey }));
+        fireEvent.click(await screen.findByRole('button', { name: copy.auth.codes.done }));
+        expect((await screen.findByTestId('arrived')).textContent).toBe('/today');
+      } finally {
+        Reflect.deleteProperty(window, 'matchMedia');
+        localStorage.clear();
+      }
+    },
+  );
 
   it('checks the name and email before asking the server', async () => {
     const api = fakeApi({ [VERIFY_INVITE]: { body: { valid: true } } });

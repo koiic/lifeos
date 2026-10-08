@@ -51,7 +51,7 @@ describe('router', () => {
   });
 
   it('declares every screen route as lazy (code-split)', () => {
-    for (const path of ['today', 'register', 'signin', 'recover', 'settings/security']) {
+    for (const path of ['today', 'register', 'signin', 'recover', 'settings/security', 'install']) {
       expect(child(path)?.lazy, path).toBeTypeOf('function');
     }
   });

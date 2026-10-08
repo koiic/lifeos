@@ -1,0 +1,61 @@
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+/* Each step: its number on the illustration's corner, then the instruction. */
+.step {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  counter-increment: step;
+}
+
+.illustration {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--size-touch-target) + var(--space-4));
+  height: calc(var(--size-touch-target) + var(--space-4));
+  border-radius: var(--radius-card);
+  background-color: var(--surface-tint);
+  color: var(--ink); /* "ink on surface-tint" (decorative tiles) */
+}
+
+.illustration::after {
+  position: absolute;
+  top: calc(-1 * var(--space-1));
+  left: calc(-1 * var(--space-1));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-icon);
+  height: var(--size-icon);
+  border-radius: var(--radius-chip);
+  background-color: var(--sun);
+  color: var(--accent-ink); /* "accent-ink on sun" (highlights) */
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-label);
+  content: counter(step);
+}
+
+.text {
+  font-weight: var(--font-weight-body-strong);
+}
+
+.note {
+  color: var(--ink-muted);
+}
