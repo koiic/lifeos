@@ -18,7 +18,7 @@ Spec version: 1 · Plan version: 1
 | T06 | Invites, passkey registration and sign-in, sessions, recovery codes | — | T04 | done | acfa992 | make verify green (831 server, 31 web); 120 tests added; 4 reviewers fixed/answered; CR-012, CR-013 approved |
 | T07 | Password + TOTP fallback, rate limits, auth events | AUTH-7 | T06 | done | ac85653 | make verify green (972 server, 31 web); ~110 tests, AUTH-7 tagged; 25 mutations caught; 4 reviewers fixed/answered; CR-014/015/016 approved |
 | T08 | App-lock PIN, re-auth, session management, passkey management, recovery invite | AUTH-8 | T07 | done | f83a444 | make verify green (1110 server, 31 web); ~130 tests, AUTH-8 tagged; 25 mutations caught; 4 reviewers fixed/answered; CR-017..022 approved |
-| T09 | Profile, settings, consent and per-user seeding | — | T06 | blocked |  | blocked: CR-004: optimistic concurrency version vs updated_at |
+| T09 | Profile, settings, consent and per-user seeding | — | T06 | in_progress |  | blocked: CR-004: optimistic concurrency version vs updated_at |
 | T10 | Web scaffold: router, query client, generated API client, error boundary | — | T01 | done | d655afd | make verify green (exit 0, Postgres 16): 322 server tests (78 new), web 31 tests (lib/api 100% lines), initial JS 73.4 kB/250 kB, ESLint boundaries tested at any depth, api-contract regenerated, trace 0 errors, gitleaks clean; 4 reviewers CHANGES REQUIRED -> all findings fixed or answered (T10.md); T07 follow-up: key client-error limit on client IP |
 | T11 | Design system foundation: tokens, fonts, themes, base components | — | T10 | done | 4efd551 | 19 ui primitives, fonts, themes; verify green (server 1123, web 127), e2e 13 (58 snapshots, behaviour checks); CR-023/CR-024 applied; 3 review rounds closed |
 | T12 | Web auth flows: register, sign-in, fallback, recovery, lock screen, sessions | AUTH-1, AUTH-2, AUTH-3, AUTH-4, AUTH-5, AUTH-6 | T08, T11 | done | ee29c68 | Auth screens, app lock, Settings security; verify green (server 1129, web 274), verify-e2e 17 incl. 4 auth journeys on a real stack; CR-025; 4 reviews + closure fixed |
@@ -26,7 +26,7 @@ Spec version: 1 · Plan version: 1
 | T14 | Web Push end to end: VAPID, subscriptions, test push, permission card | ONB-3 | T05, T13 | done | fa91882 | make verify green (server 1245, web 389, cov 97.3%); verify-e2e 26 passed; 4 reviews closed; CR-027/028 approved; phone check moved to T15 |
 | T15 | Infrastructure: VPS, Docker Compose, Cloudflare Pages, Pages Function proxy, Tunnel, Access, secrets | — | T02, T13 | blocked |  | blocked: CR-006: stale Caddy and infra layout in spec |
 | T16 | CI/CD: pipelines, staging deploy, production approval, scans, external-origin check | NFR-6 | T15 | todo | | |
-| T17 | App shell: bottom navigation, Today greeting, profile and theme settings | SET-1, SET-2, TOD-1 | T12 | todo | | |
+| T17 | App shell: bottom navigation, Today greeting, profile and theme settings | SET-1, SET-2, TOD-1 | T12 | blocked |  | blocked: CR-029: depends on T09 (do T09 first) |
 | GATE-M1 | Milestone gate review (plan section 8) | — | all M1 tasks | todo | | |
 
 ## M2 Logging (weeks 3–4)
