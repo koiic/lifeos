@@ -18,15 +18,11 @@ from pydantic import (
 )
 from pydantic_core import PydanticCustomError
 
+from app.platform.text import clean_text
+
 # A practical shape check (one @, a dot in the domain, no spaces); the invite proves ownership.
 EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 NAME_MAX = 100
-
-
-def clean_text(value: str) -> str:
-    """Spec 9.4 strings: Unicode NFC, control (and format) characters stripped, trimmed."""
-    value = unicodedata.normalize("NFC", value)
-    return "".join(c for c in value if unicodedata.category(c) not in {"Cc", "Cf"}).strip()
 
 
 def clean_name(value: str) -> str:

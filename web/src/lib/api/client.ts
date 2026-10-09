@@ -131,6 +131,8 @@ export async function apiRequest<P extends ApiPath, M extends Method>(
   }
   const response = await fetch(url, init);
   if (!response.ok) throw await toApiError(response);
-  if (response.status === 204) return undefined as SuccessBody<Operation<P, M>>;
-  return (await response.json()) as SuccessBody<Operation<P, M>>;
+  // No content (204, or e.g. a 201 Created with an empty body): nothing to parse.
+  const text = response.status === 204 ? '' : await response.text();
+  if (text === '') return undefined as SuccessBody<Operation<P, M>>;
+  return JSON.parse(text) as SuccessBody<Operation<P, M>>;
 }

@@ -2,7 +2,7 @@
 
 - Raised by: Claude Code during T14 (spec and security review findings)
 - Date: 2026-10-09
-- Status: proposed
+- Status: approved (spec re-sync pending)
 
 ## Problem
 
@@ -20,7 +20,7 @@ through the real service worker).
 **B. A revoked or signed-out device keeps getting reminders.** Spec 7.2:
 `push_subscriptions.session_id uuid REFERENCES sessions(id) ON DELETE SET NULL`. Spec 12.1 (threat
 model): "Lost or stolen phone | Phone lock, app lock, remote session revocation, …". Revoking
-the lost phone's session (AUTH-6) or signing out deletes the session, but the subscription
+the lost phone's session (AUTH-5) or signing out deletes the session, but the subscription
 stays active with `session_id` NULL, so the phone keeps showing reminders on its lock screen,
 including medication names and the "Taken" action unless discreet mode is on (10.4). The spec
 says nothing about what revocation does to that device's subscription.
@@ -49,7 +49,7 @@ plan 4; anything else needs a change request".
 
 1. Revoking a session or signing out turns off that session's subscriptions (`disabled_at = now`)
    in the same transaction. The device re-registers on its next signed-in start (10.5), which
-   turns it back on. Spec 7.2 gains a note; AUTH-6 and sign-out get a test each. Impact: the auth
+   turns it back on. Spec 7.2 gains a note; AUTH-5 revocation, sign-out and the AUTH-6 PIN lockout get a test each. Impact: the auth
    service calls the notify service (allowed: modules talk through services); a few lines plus
    tests, in T14.
 2. As 1, and also delete the row instead of disabling it. Impact: the same, but no history of
@@ -84,7 +84,12 @@ back. C1 removes the redirect path for a package that is already in the image.
 - Tokens changes: none.
 - Tasks affected: T14 (B1 and C1 code and tests), T15 (A1 manual check).
 
-## Decision (Ibrahim)
+## Decision (Ibrahim, 2026-10-09)
 
-<approved / rejected, date, notes>. After approval: update the spec in Claude Docs, re-export it
-to docs/spec.md with the version bumped, commit `docs: sync spec vN (CR-027)`.
+The recommended options: A1, B1 and C1. After the spec re-sync: update the spec in Claude Docs,
+re-export it to docs/spec.md with the version bumped, commit `docs: sync spec vN (CR-027)`; plan 7
+and tasks.json move the phone check from T14 to T15.
+
+Corrected after approval (Claude Code, 2026-10-09): the body said revoking a session was AUTH-6;
+it is AUTH-5 (AUTH-6 is the app lock). B1's tests also cover the app lock's fifth wrong PIN,
+which ends the session the same way. The behaviour approved is unchanged.

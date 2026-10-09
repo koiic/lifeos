@@ -5,9 +5,16 @@ from pathlib import Path
 import pytest
 
 from app.platform.config import ConfigError, load_settings
+from tests.kek import write_vapid_secrets
 
 LOCAL = {"ENV": "local"}
 DEPLOYED = ["staging", "production"]
+
+
+@pytest.fixture(autouse=True)
+def _vapid_secrets(tmp_path: Path) -> None:
+    """Deployed envs also need the VAPID secret files (T14); their own tests are in test_vapid."""
+    write_vapid_secrets(tmp_path)
 
 
 def test_env_is_required(tmp_path: Path) -> None:

@@ -5,12 +5,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { copy } from '../copy/en-GB';
 import { REASON } from '../lib/auth/session';
+import { refreshSubscription } from '../lib/push/push';
 import { fakeApi, problem } from '../lib/testing/fakeApi';
 import { routes } from './router';
+
+vi.mock('../lib/push/push', async (original) => ({
+  ...(await original<typeof import('../lib/push/push')>()),
+  refreshSubscription: vi.fn().mockResolvedValue(undefined),
+}));
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.mocked(refreshSubscription).mockClear();
 });
 
 const SESSIONS = 'GET /api/v1/auth/sessions';
@@ -51,7 +58,15 @@ describe('router', () => {
   });
 
   it('declares every screen route as lazy (code-split)', () => {
-    for (const path of ['today', 'register', 'signin', 'recover', 'settings/security', 'install']) {
+    for (const path of [
+      'today',
+      'register',
+      'signin',
+      'recover',
+      'settings/security',
+      'install',
+      'setup/notifications',
+    ]) {
       expect(child(path)?.lazy, path).toBeTypeOf('function');
     }
   });
@@ -64,12 +79,20 @@ describe('router', () => {
     expect(router.state.location.search).toBe(`?next=${encodeURIComponent('/today?from=link')}`);
   });
 
+  it('[ONB-3] the signed-in app re-registers its push subscription on start (spec 10.5)', async () => {
+    signedIn();
+    renderAt('/today');
+    expect(await screen.findByRole('heading', { name: copy.today.title }, LAZY)).toBeDefined();
+    expect(refreshSubscription).toHaveBeenCalledOnce();
+  });
+
   it('the sign-in screen is open to a signed-out visitor', async () => {
     fakeApi({});
     renderAt('/signin');
     expect(
       await screen.findByRole('heading', { name: copy.auth.signIn.title }, LAZY),
     ).toBeDefined();
+    expect(refreshSubscription).not.toHaveBeenCalled(); // signed out: nothing to re-register
   });
 
   it('shows the error boundary for unknown routes', async () => {

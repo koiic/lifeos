@@ -6,6 +6,8 @@
   the same format; the KEK version lives in `users.kek_version`.
 - KEK rotation: a `Keyring` holds every live KEK version; new wraps use the highest. It is loaded
   from the `lifeos_kek` secret: one `<version> <base64 key>` line per version (CR-011).
+- VAPID (Web Push, 10.4, 14.3): the P-256 key pair that signs pushes; generated here, and the
+  configured pair is checked to match at start-up.
 - Every failure raises `DecryptionError("decryption failed")` with no cause and no context, so
   callers cannot tell why and no plaintext or key reaches logs. Keys never print or pickle.
 """
@@ -17,9 +19,12 @@ import secrets
 import time
 import uuid
 from collections.abc import Callable, Mapping
+from dataclasses import dataclass
 from typing import NoReturn
 
 from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from pydantic import ValidationError
 
@@ -285,3 +290,83 @@ class DekCache:
 
     def __repr__(self) -> str:
         return f"<DekCache entries={len(self._entries)}>"
+
+
+# ---------- VAPID (Web Push, 10.4, 14.3) ----------
+
+LOCAL_VAPID_SUBJECT = "mailto:admin@localhost"
+
+
+def _b64url(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
+
+
+def _b64url_decode(value: str) -> bytes:
+    return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
+
+
+@dataclass(frozen=True)
+class VapidKeys:
+    """`public_key`: the uncompressed P-256 point (65 bytes, the browser's applicationServerKey);
+    `private_key`: the raw 32-byte scalar. Both unpadded base64url, as VAPID tools write them."""
+
+    public_key: str
+    private_key: str
+
+    def __repr__(self) -> str:
+        return f"<VapidKeys public={self.public_key[:8]}…>"
+
+
+@dataclass(frozen=True)
+class Vapid:
+    """The keys and subject the API signs pushes with (`app.state.vapid`)."""
+
+    public_key: str
+    private_key: str
+    subject: str
+
+    def __repr__(self) -> str:
+        return f"<Vapid public={self.public_key[:8]}… subject={self.subject}>"
+
+
+def generate_vapid_keys() -> VapidKeys:
+    private = ec.generate_private_key(ec.SECP256R1())
+    raw = private.private_numbers().private_value.to_bytes(32, "big")
+    return VapidKeys(vapid_public_key(_b64url(raw)), _b64url(raw))
+
+
+def vapid_public_key(private_key: str) -> str:
+    """The public key of a raw base64url private key; ValueError if it is not one."""
+    try:
+        raw = _b64url_decode(private_key)
+    except (binascii.Error, ValueError):
+        raise ValueError("not a VAPID private key") from None
+    if len(raw) != 32:
+        raise ValueError("not a VAPID private key")
+    private = ec.derive_private_key(int.from_bytes(raw, "big"), ec.SECP256R1())
+    point = private.public_key().public_bytes(
+        serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint
+    )
+    return _b64url(point)
+
+
+def load_vapid(settings: Settings) -> Vapid:
+    """The configured VAPID pair, checked to match; in ENV=local without one, a pair generated
+    for this process (browsers subscribed to an earlier one simply subscribe again)."""
+    private = settings.vapid_private_key.get_secret_value() if settings.vapid_private_key else None
+    if private is None or settings.vapid_public_key is None or settings.vapid_subject is None:
+        if settings.env != "local":
+            raise ConfigError("VAPID keys and subject are required outside local")
+        keys = generate_vapid_keys()
+        return Vapid(
+            keys.public_key, keys.private_key, settings.vapid_subject or LOCAL_VAPID_SUBJECT
+        )
+    try:
+        derived = vapid_public_key(private)
+    except ValueError:
+        raise ConfigError("VAPID_PRIVATE_KEY is not a raw base64url P-256 key") from None
+    if derived != settings.vapid_public_key:
+        raise ConfigError("VAPID_PUBLIC_KEY does not belong to VAPID_PRIVATE_KEY")
+    if not settings.vapid_subject.startswith("mailto:"):
+        raise ConfigError("VAPID_SUBJECT must be a mailto: address (10.4)")
+    return Vapid(settings.vapid_public_key, private, settings.vapid_subject)

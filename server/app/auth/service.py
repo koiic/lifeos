@@ -63,6 +63,7 @@ from app.auth.schemas import (
     Registration,
     SignedIn,
 )
+from app.notify.service import stop_session_notifications
 from app.platform.crypto import (
     DataKey,
     Keyring,
@@ -968,6 +969,7 @@ class AuthService:
         async with user_transaction(self._db, ref.user_id) as tx:
             await repo.revoke_session(tx, ref.id, now)
             await repo.spend_pending_challenges(tx, ref.user_id, now)
+            await stop_session_notifications(tx, ref.id, now)
         await self._log("revoke", True, ref.user_id, ip_hash, now)
 
 
@@ -1106,6 +1108,7 @@ class AccountService:
             if not await repo.revoke_user_session(tx, session.user_id, session_id, now):
                 raise NotFound
             await repo.spend_pending_challenges(tx, session.user_id, now)
+            await stop_session_notifications(tx, session_id, now)
         await self._auth._log("revoke", True, session.user_id, client.ip_hash, now)
 
     # ----- passkeys -----
@@ -1244,6 +1247,7 @@ class AccountService:
         async with user_transaction(self._db, session.user_id) as tx:
             await repo.revoke_session(tx, session.session_id, now)
             await repo.spend_pending_challenges(tx, session.user_id, now)
+            await stop_session_notifications(tx, session.session_id, now)
 
     # ----- recovery invites (AUTH-8, CR-018) -----
 

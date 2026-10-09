@@ -11,6 +11,7 @@ from pydantic import SecretStr
 
 from app.platform.client_ip import ClientIpMissing, client_ip, hash_ip
 from app.platform.config import Settings
+from tests.kek import vapid_settings
 from tests.platform.conftest import read_logs
 
 KEY = SecretStr("k" * 32)
@@ -22,6 +23,7 @@ def settings(env: str) -> Settings:
         app_origin="https://a.example",
         database_url=SecretStr("postgresql://x"),
         ip_hmac_key=KEY,
+        **vapid_settings(),
     )
 
 
@@ -103,6 +105,7 @@ def test_a_deployed_api_refuses_to_start_without_the_key(env: str) -> None:
         app_origin="https://a.example",
         database_url=SecretStr("postgresql://x"),
         lifeos_kek=SecretStr(TEST_KEK),
+        **vapid_settings(),
     )
     with pytest.raises(ConfigError, match="ip_hmac_key"):
         create_app(no_key)
@@ -129,6 +132,7 @@ def test_a_deployed_api_refuses_a_short_key(env: str) -> None:
         database_url=SecretStr("postgresql://x"),
         lifeos_kek=SecretStr(TEST_KEK),
         ip_hmac_key=SecretStr("k" * 31),
+        **vapid_settings(),
     )
     with pytest.raises(ConfigError, match="32 bytes"):
         create_app(short)
@@ -146,6 +150,7 @@ def production_app() -> TestClient:
             database_url=SecretStr("postgresql://x"),
             lifeos_kek=SecretStr(TEST_KEK),
             ip_hmac_key=SecretStr(TEST_IP_KEY),
+            **vapid_settings(),
         )
     )
     return TestClient(app, base_url="https://a.example")

@@ -37,6 +37,7 @@ test('every base component has at least one story', async ({ page }) => {
       'layout--grid',
       'layout--stack',
       'lockscreen',
+      'notificationpermissioncard',
       'select',
       'sheet',
       'skeleton',

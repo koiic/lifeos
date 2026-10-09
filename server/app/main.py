@@ -10,10 +10,12 @@ from fastapi.responses import JSONResponse
 from app.admin import api as admin_api
 from app.auth import api as auth_api
 from app.auth.service import AccountService, AuthService
+from app.notify import api as notify_api
+from app.notify.service import NotifyService
 from app.platform import client_errors, probes
 from app.platform.client_ip import ClientIpMissing, ClientIpRequiredMiddleware, ip_hmac_key
 from app.platform.config import Settings, load_settings
-from app.platform.crypto import load_keyring
+from app.platform.crypto import load_keyring, load_vapid
 from app.platform.db import ADMIN_WRITE_ROLE, APP_ROLE, create_engine, verify_role
 from app.platform.errors import install_error_handlers, install_problem_openapi, problem_response
 from app.platform.logging import configure_logging
@@ -30,6 +32,7 @@ log = structlog.get_logger()
 def create_app(settings: Settings) -> FastAPI:
     # Loaded here, not in the lifespan: a bad master-key file stops the process at import.
     keyring = load_keyring(settings)
+    vapid = load_vapid(settings)  # a missing or mismatched VAPID pair stops start-up too
     ip_hmac_key(settings)  # outside local the IP_HMAC_KEY file is required (14.3)
 
     @asynccontextmanager
@@ -48,6 +51,9 @@ def create_app(settings: Settings) -> FastAPI:
             if settings.env != "local":
                 await verify_role(admin_engine, ADMIN_WRITE_ROLE)
         app.state.account = AccountService(app.state.auth, admin_engine)
+        app.state.notify = NotifyService(
+            app.state.engine, vapid, keyring, local=settings.env == "local"
+        )
         yield
         await app.state.engine.dispose()
         if admin_engine is not None:
@@ -63,6 +69,7 @@ def create_app(settings: Settings) -> FastAPI:
         openapi_url="/api/v1/openapi.json" if settings.env == "local" else None,
     )
     app.state.settings = settings
+    app.state.vapid = vapid
     app.state.client_error_limiter = client_errors.KeyedLimiter(
         limit=client_errors.LIMIT_PER_MINUTE, window_s=60
     )
@@ -90,6 +97,7 @@ def create_app(settings: Settings) -> FastAPI:
     app.include_router(client_errors.router)
     app.include_router(auth_api.router)
     app.include_router(admin_api.router)
+    app.include_router(notify_api.router)
     return app
 
 

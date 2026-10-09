@@ -1,6 +1,7 @@
 import { Navigate, Outlet, type RouteObject } from 'react-router-dom';
 
 import { AppLock } from './AppLock';
+import { PushRefresh } from './PushRefresh';
 import { RouteErrorBoundary, type RouteHandle } from './ErrorBoundary';
 import { RequireSession } from './RequireSession';
 
@@ -11,6 +12,7 @@ function SignedIn() {
   return (
     <RequireSession>
       <AppLock>
+        <PushRefresh />
         <Outlet />
       </AppLock>
     </RequireSession>
@@ -73,6 +75,15 @@ export const routes: RouteObject[] = [
             lazy: async () => {
               const { TodayScreen } = await import('../features/today/TodayScreen');
               return { Component: TodayScreen };
+            },
+          },
+          {
+            path: 'setup/notifications',
+            handle: handle('/setup/notifications'),
+            lazy: async () => {
+              const { NotificationsScreen } =
+                await import('../features/onboarding/NotificationsScreen');
+              return { Component: NotificationsScreen };
             },
           },
           {

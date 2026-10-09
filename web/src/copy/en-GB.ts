@@ -140,6 +140,67 @@ export const copy = {
     note: 'From now on, open Life OS from its icon. The browser tab keeps its own separate sign-in and settings.',
     continue: 'Not now, carry on in the browser',
   },
+  notifications: {
+    title: 'Reminders on this phone',
+    intro:
+      'Life OS can remind you about check-ins, your period and your medicines. You choose which in Settings.',
+    enable: 'Turn on notifications',
+    sendTest: 'Send a test notification',
+    testSent: 'Sent. It should appear in a moment.',
+    testFailed: "That didn't reach this phone. Try again in a moment.",
+    failed: "Notifications couldn't be turned on. Try again.",
+    continue: 'Continue',
+    // Saved with the subscription, to tell her devices apart in Settings (T32).
+    deviceLabel: {
+      ios: 'iPhone or iPad',
+      android: 'Android',
+      other: 'Computer',
+    },
+    prompt: {
+      title: 'Turn on reminders',
+      body: 'Your phone will ask whether Life OS can send notifications. Tap Allow.',
+    },
+    granted: {
+      title: 'Notifications are on',
+      body: 'Send a test to see how they look.',
+    },
+    denied: {
+      title: 'Notifications are off',
+      body: 'Your phone is blocking them. To turn them back on:',
+      stepsLabel: 'How to turn them on',
+      steps: {
+        ios: [
+          'Open the Settings app',
+          'Tap Notifications, then Life OS',
+          'Turn on Allow Notifications',
+        ],
+        android: [
+          'Touch and hold the Life OS icon, then tap App info',
+          'Tap Notifications',
+          'Turn on Allow notifications',
+        ],
+        androidBrowser: [
+          'Tap the icon at the left of the address bar',
+          'Tap Permissions, then Notifications',
+          'Turn on Allow notifications',
+        ],
+        other: [
+          'Click the icon at the left of the address bar',
+          'Find Notifications and choose Allow',
+          'Reload this page',
+        ],
+      },
+    },
+    needsInstall: {
+      title: 'Add Life OS to your Home Screen first',
+      body: 'On iPhone, notifications only come to apps opened from the Home Screen.',
+      action: 'How to add it',
+    },
+    unsupported: {
+      title: "This browser can't show notifications",
+      body: 'Everything is still in the app. On iPhone use Safari; on Android use Chrome.',
+    },
+  },
   update: {
     ready: 'New version ready',
     refresh: 'Refresh',

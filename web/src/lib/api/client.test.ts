@@ -188,4 +188,14 @@ describe('apiRequest details', () => {
     ).rejects.toThrow('session_id');
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it('a success with an empty body (e.g. 201 Created) returns nothing, without failing', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 201 }));
+    await expect(
+      apiRequest('POST', '/api/v1/push/subscriptions', {
+        endpoint: 'https://fcm.googleapis.com/x',
+        keys: { p256dh: 'B', auth: 'a' },
+      }),
+    ).resolves.toBeUndefined();
+  });
 });

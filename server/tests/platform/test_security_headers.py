@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.main import create_app
 from app.platform.config import Settings
-from tests.kek import TEST_IP_KEY, TEST_KEK
+from tests.kek import TEST_IP_KEY, TEST_KEK, vapid_settings
 from tests.platform.conftest import GOOD_HEADERS, ORIGIN
 
 EXPECTED = {
@@ -44,6 +44,7 @@ def test_openapi_document_is_served_only_locally(client: TestClient, database_ur
         database_url=database_url,
         lifeos_kek=TEST_KEK,
         ip_hmac_key=TEST_IP_KEY,
+        **vapid_settings(),
     )
     # Routing only: no lifespan (a production start-up requires a real lifeos_app login, T05).
     prod = TestClient(create_app(settings), base_url=ORIGIN)

@@ -10,7 +10,7 @@ import asyncpg
 import pytest
 
 from tests.jobs.conftest import JobEnv
-from tests.kek import TEST_IP_KEY, TEST_KEK
+from tests.kek import TEST_IP_KEY, TEST_KEK, vapid_settings
 
 pytestmark = pytest.mark.integration
 
@@ -204,6 +204,7 @@ async def test_outside_local_the_api_refuses_a_login_that_is_not_lifeos_app(migr
         database_url=migrated,
         lifeos_kek=TEST_KEK,
         ip_hmac_key=TEST_IP_KEY,
+        **vapid_settings(),
     )
     with pytest.raises(ConfigError, match="lifeos_app"), TestClient(create_app(settings)):
         pass

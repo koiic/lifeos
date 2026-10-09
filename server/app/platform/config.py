@@ -20,6 +20,7 @@ LOCAL_APP_ORIGIN = "http://localhost:5173"
 # Matches infra/docker-compose.dev.yml; only ever used when ENV=local.
 LOCAL_DATABASE_URL = "postgresql://lifeos:lifeos@127.0.0.1:54320/lifeos"
 LOCAL_IP_HMAC_KEY = "lifeos-local-development-ip-hmac-key"
+VAPID_SECRETS = ("vapid_public_key", "vapid_private_key", "vapid_subject")
 ORIGIN = re.compile(r"(?P<scheme>https?)://[A-Za-z0-9.-]+(:\d+)?")
 HOSTNAME = re.compile(r"[a-z0-9-]+(\.[a-z0-9-]+)*")
 
@@ -46,6 +47,11 @@ class Settings(BaseModel):
     lifeos_kek: SecretStr | None = None
     # HMAC key for client IPs (7.2 ip_hash, 12.5, 14.3); None only in ENV=local (fixed dev key).
     ip_hmac_key: SecretStr | None = None
+    # Web Push VAPID keys and subject (10.4, 14.3); None only in ENV=local (a pair is generated
+    # per process, see platform.crypto.load_vapid).
+    vapid_public_key: str | None = None
+    vapid_private_key: SecretStr | None = None
+    vapid_subject: str | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -115,6 +121,10 @@ def load_settings(
         admin_write_url = environ.get("DATABASE_ADMIN_WRITE_URL", database_url)
 
     kek = read_secret("lifeos_kek", secrets_dir)
+    vapid = {name: read_secret(name, secrets_dir) for name in VAPID_SECRETS}
+    missing = [name for name, value in vapid.items() if value is None]
+    if missing and not local:
+        raise ConfigError(f"secret files {', '.join(missing)} are required outside local (10.4)")
     ip_key = read_secret("ip_hmac_key", secrets_dir)
     if ip_key is None and local:
         ip_key = environ.get("IP_HMAC_KEY", LOCAL_IP_HMAC_KEY)
@@ -129,4 +139,9 @@ def load_settings(
         webauthn_rp_id=rp_id,
         lifeos_kek=SecretStr(kek) if kek else None,
         ip_hmac_key=SecretStr(ip_key) if ip_key else None,
+        vapid_public_key=vapid["vapid_public_key"],
+        vapid_private_key=(
+            SecretStr(vapid["vapid_private_key"]) if vapid["vapid_private_key"] else None
+        ),
+        vapid_subject=vapid["vapid_subject"],
     )

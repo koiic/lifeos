@@ -1,10 +1,11 @@
 /// <reference lib="webworker" />
 // Spec 11.3: the service worker (vite-plugin-pwa, injectManifest). Push and notification handlers
-// (10.5) are added by T14.
+// (10.5) live in lib/sw/push.ts, unit-tested.
 import { createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
 
 import { networkThenShell } from './lib/sw/navigation';
+import { handleClick, handlePush, handleSubscriptionChange, type WindowLike } from './lib/sw/push';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -33,4 +34,47 @@ self.addEventListener('message', (event) => {
   if (fromWindow && (event.data as { type?: unknown } | null)?.type === 'SKIP_WAITING') {
     void self.skipWaiting();
   }
+});
+
+// 10.5: every push shows a notification (iOS requires one), then the app badge.
+self.addEventListener('push', (event) => {
+  event.waitUntil(
+    handlePush(event.data?.text() ?? null, {
+      showNotification: (title, options) => self.registration.showNotification(title, options),
+      setAppBadge:
+        'setAppBadge' in navigator
+          ? (count) =>
+              (navigator as Navigator & { setAppBadge: (n: number) => Promise<void> }).setAppBadge(
+                count,
+              )
+          : undefined,
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    handleClick(
+      { action: event.action, data: event.notification.data as unknown },
+      {
+        fetch: (input, init) => fetch(input, init),
+        openWindow: (url) => self.clients.openWindow(url),
+        matchAll: async () =>
+          (await self.clients.matchAll({
+            type: 'window',
+            includeUncontrolled: true,
+          })) as unknown as WindowLike[],
+      },
+    ),
+  );
+});
+
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil(
+    handleSubscriptionChange({
+      fetch: (input, init) => fetch(input, init),
+      subscribe: (options) => self.registration.pushManager.subscribe(options),
+    }),
+  );
 });
