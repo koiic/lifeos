@@ -487,6 +487,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Me
+         * @description Bootstraps the client (9.2): profile, settings, consent, health mode and how the device's
+         *     timezone compares with hers (CR-030).
+         */
+        get: operations["get_me_api_v1_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change Profile
+         * @description SET-1: her display name and timezone.
+         */
+        patch: operations["change_profile_api_v1_me_patch"];
+        trace?: never;
+    };
+    "/api/v1/me/consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give Consent
+         * @description 12.6, CR-030: her explicit consent to health data, at the current version; stored once.
+         */
+        post: operations["give_consent_api_v1_me_consent_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change Settings
+         * @description SET-1 (week start, units), SET-2 (theme), SET-3 (notifications, quiet hours, check-in
+         *     time), SET-5 (discreet) and optional fields.
+         */
+        patch: operations["change_settings_api_v1_me_settings_patch"];
+        trace?: never;
+    };
     "/api/v1/push/subscriptions": {
         parameters: {
             query?: never;
@@ -582,6 +648,30 @@ export interface components {
             /** Timeout S */
             timeout_s?: number | null;
         };
+        /** Consent */
+        Consent: {
+            /** Current Version */
+            current_version: string;
+            /** Given At */
+            given_at: string | null;
+            /** Version */
+            version: string | null;
+        };
+        /** ConsentIn */
+        ConsentIn: {
+            /** Version */
+            version: string;
+        };
+        /** DayBeforeAt */
+        DayBeforeAt: {
+            /** Time */
+            time: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "day_before_at";
+        };
         /** FieldError */
         FieldError: {
             /** Code */
@@ -602,6 +692,83 @@ export interface components {
             email: string | null;
             /** Valid */
             valid: boolean;
+        };
+        /**
+         * Me
+         * @description Bootstraps the client (9.2). CR-030: no feature flags; `device_timezone` is the client's
+         *     `X-Timezone` when it is an IANA zone, and `timezone_differs` says it is not hers.
+         */
+        Me: {
+            consent: components["schemas"]["Consent"];
+            /** Device Timezone */
+            device_timezone: string | null;
+            /**
+             * Health Mode
+             * @enum {string}
+             */
+            health_mode: "standard" | "postpartum" | "ttc" | "avoid";
+            profile: components["schemas"]["Profile"];
+            settings: components["schemas"]["Settings"];
+            /** Timezone Differs */
+            timezone_differs: boolean;
+        };
+        /** MinutesBefore */
+        MinutesBefore: {
+            /** Minutes */
+            minutes: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "minutes_before";
+        };
+        /** NotifPrefs */
+        NotifPrefs: {
+            /** Appointment */
+            appointment: boolean;
+            /** Checkin */
+            checkin: boolean;
+            /** Late Period */
+            late_period: boolean;
+            /** Medication */
+            medication: boolean;
+            /** Period Due */
+            period_due: boolean;
+            /** Task */
+            task: boolean;
+        };
+        /** NotifPrefsChange */
+        NotifPrefsChange: {
+            /** Appointment */
+            appointment?: boolean | null;
+            /** Checkin */
+            checkin?: boolean | null;
+            /** Late Period */
+            late_period?: boolean | null;
+            /** Medication */
+            medication?: boolean | null;
+            /** Period Due */
+            period_due?: boolean | null;
+            /** Task */
+            task?: boolean | null;
+        };
+        /** OptionalFields */
+        OptionalFields: {
+            /** Bbt */
+            bbt: boolean;
+            /** Discharge */
+            discharge: boolean;
+            /** Intimacy */
+            intimacy: boolean;
+        };
+        /** OptionalFieldsChange */
+        OptionalFieldsChange: {
+            /** Bbt */
+            bbt?: boolean | null;
+            /** Discharge */
+            discharge?: boolean | null;
+            /** Intimacy */
+            intimacy?: boolean | null;
         };
         /** PasskeyList */
         PasskeyList: {
@@ -679,6 +846,51 @@ export interface components {
              * @default null
              */
             errors: components["schemas"]["FieldError"][] | null;
+            /** Status */
+            status: number;
+            /** Title */
+            title: string;
+            /**
+             * Type
+             * @default about:blank
+             */
+            type: string;
+        };
+        /** Profile */
+        Profile: {
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /** Id */
+            id: string;
+            /** Locale */
+            locale: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "admin";
+            /** Timezone */
+            timezone: string;
+            /** Version */
+            version: string;
+        };
+        /** ProfileChange */
+        ProfileChange: {
+            /** Display Name */
+            display_name?: string | null;
+            /** Timezone */
+            timezone?: string | null;
+        };
+        /**
+         * ProfileConflict
+         * @description 409 (9.1): the problem, with the current profile.
+         */
+        ProfileConflict: {
+            current: components["schemas"]["Profile"];
+            /** Detail */
+            detail: string;
             /** Status */
             status: number;
             /** Title */
@@ -828,6 +1040,80 @@ export interface components {
              * Format: date-time
              */
             last_seen_at: string;
+        };
+        /** Settings */
+        Settings: {
+            /** App Lock Enabled */
+            app_lock_enabled: boolean;
+            /** App Lock Timeout S */
+            app_lock_timeout_s: number;
+            /** Appointment Reminder Defaults */
+            appointment_reminder_defaults: (components["schemas"]["DayBeforeAt"] | components["schemas"]["MinutesBefore"])[];
+            /** Checkin Time */
+            checkin_time: string;
+            /** Discreet Notifications */
+            discreet_notifications: boolean;
+            notif_prefs: components["schemas"]["NotifPrefs"];
+            /** Onboarding Completed At */
+            onboarding_completed_at: string | null;
+            optional_fields: components["schemas"]["OptionalFields"];
+            /** Quiet End */
+            quiet_end: string;
+            /** Quiet Start */
+            quiet_start: string;
+            /**
+             * Temp Unit
+             * @enum {string}
+             */
+            temp_unit: "C" | "F";
+            /**
+             * Theme
+             * @enum {string}
+             */
+            theme: "system" | "light" | "dark";
+            /** Time Format */
+            time_format: string;
+            /** Version */
+            version: string;
+            /** Week Start */
+            week_start: number;
+        };
+        /** SettingsChange */
+        SettingsChange: {
+            /** Checkin Time */
+            checkin_time?: string | null;
+            /** Discreet Notifications */
+            discreet_notifications?: boolean | null;
+            notif_prefs?: components["schemas"]["NotifPrefsChange"] | null;
+            optional_fields?: components["schemas"]["OptionalFieldsChange"] | null;
+            /** Quiet End */
+            quiet_end?: string | null;
+            /** Quiet Start */
+            quiet_start?: string | null;
+            /** Temp Unit */
+            temp_unit?: ("C" | "F") | null;
+            /** Theme */
+            theme?: ("system" | "light" | "dark") | null;
+            /** Week Start */
+            week_start?: number | null;
+        };
+        /**
+         * SettingsConflict
+         * @description 409 (9.1): the problem, with the current settings.
+         */
+        SettingsConflict: {
+            current: components["schemas"]["Settings"];
+            /** Detail */
+            detail: string;
+            /** Status */
+            status: number;
+            /** Title */
+            title: string;
+            /**
+             * Type
+             * @default about:blank
+             */
+            type: string;
         };
         /** SignInOptions */
         SignInOptions: Record<string, never>;
@@ -2502,6 +2788,311 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    get_me_api_v1_me_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Timezone"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated (CR-014). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request has invalid fields. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    change_profile_api_v1_me_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Profile"];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated (CR-014). Or: Missing X-LifeOS-Client header or wrong Origin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The version in If-Match is not current; `current` holds it. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProfileConflict"];
+                };
+            };
+            /** @description The request body is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request has invalid fields. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match is missing (CR-004). */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    give_consent_api_v1_me_consent_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Consent"];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated (CR-014). Or: Missing X-LifeOS-Client header or wrong Origin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request body is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request has invalid fields. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    change_settings_api_v1_me_settings_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Settings"];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated (CR-014). Or: Missing X-LifeOS-Client header or wrong Origin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The version in If-Match is not current; `current` holds it. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["SettingsConflict"];
+                };
+            };
+            /** @description The request body is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request has invalid fields. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match is missing (CR-004). */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };

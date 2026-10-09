@@ -46,13 +46,35 @@ def test_mutations_declare_csrf_and_size_problems(app: FastAPI) -> None:
 
 
 def test_every_error_response_in_the_contract_is_problem_json(app: FastAPI) -> None:
-    """T06: errors declared by description only (e.g. auth 401/403/409) are problem+json too."""
-    problem = {"application/problem+json": {"schema": PROBLEM_REF}}
-    for path, operations in app.openapi()["paths"].items():
+    """T06: errors declared by description only (e.g. auth 401/403/409) are problem+json too.
+    T09: a typed problem (9.1 "409 with the current resource") is problem+json with its own
+    schema, which requires every required Problem field."""
+    contract = app.openapi()
+    schemas = contract["components"]["schemas"]
+    problem_fields = set(schemas["Problem"]["required"])  # `errors` is for 422 only
+    for path, operations in contract["paths"].items():
         for method, operation in operations.items():
             for status, response in operation["responses"].items():
-                if status[0] in "45":
-                    assert response.get("content") == problem, (path, method, status)
+                if status[0] not in "45":
+                    continue
+                where = (path, method, status)
+                content = response.get("content", {})
+                assert set(content) == {"application/problem+json"}, where
+                ref = content["application/problem+json"]["schema"]["$ref"]
+                if ref != PROBLEM_REF["$ref"]:
+                    typed = schemas[ref.rsplit("/", 1)[1]]
+                    assert problem_fields <= set(typed.get("required", [])), where
+
+
+def test_a_typed_conflict_carries_the_current_resource(app: FastAPI) -> None:
+    """9.1: "mismatch → 409 with the current resource", typed for the client (T09)."""
+    contract = app.openapi()
+    for path, model in (
+        ("/api/v1/me", "ProfileConflict"),
+        ("/api/v1/me/settings", "SettingsConflict"),
+    ):
+        conflict = contract["paths"][path]["patch"]["responses"]["409"]["content"]
+        assert conflict["application/problem+json"]["schema"]["$ref"].endswith(f"/{model}"), path
 
 
 def test_a_route_403_keeps_the_csrf_reason(app: FastAPI) -> None:

@@ -19,6 +19,8 @@ LOCATIONS = {"body", "query", "path", "header", "cookie"}
 # Messages from custom validators are free text and could quote the input; use fixed ones.
 FIXED_MESSAGES = {"value_error": "Value is not valid.", "assertion_error": "Value is not valid."}
 PROBLEM_CONTENT = {PROBLEM_JSON: {"schema": {"$ref": "#/components/schemas/Problem"}}}
+# The fields every problem carries (RFC 9457 as used in 9.1).
+PROBLEM_FIELDS = frozenset({"type", "title", "status", "detail"})
 # Every mutation can be refused by the CSRF check and the body-size limit (middleware).
 MUTATION_PROBLEMS = {
     "403": "Missing X-LifeOS-Client header or wrong Origin.",
@@ -130,7 +132,16 @@ def install_problem_openapi(app: FastAPI) -> None:
                         response["content"] = PROBLEM_CONTENT
                     json_schema = response.get("content", {}).get("application/json", {})
                     ref = json_schema.get("schema", {}).get("$ref", "")
-                    if ref.endswith(("/Problem", "/HTTPValidationError")):
+                    typed = components.get(ref.rsplit("/", 1)[-1], {}) if ref else {}
+                    if (
+                        status.startswith(("4", "5"))
+                        and set(typed.get("properties", {})) >= PROBLEM_FIELDS
+                        and not ref.endswith("/Problem")
+                    ):
+                        # A typed problem (e.g. 9.1's 409 with the current resource) is sent as
+                        # problem+json with its own schema.
+                        response["content"] = {PROBLEM_JSON: {"schema": {"$ref": ref}}}
+                    elif ref.endswith(("/Problem", "/HTTPValidationError")):
                         response["content"] = PROBLEM_CONTENT
                         if status == "422":
                             response["description"] = "The request has invalid fields."

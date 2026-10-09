@@ -34,6 +34,77 @@
         "title": "AppLockSettings",
         "type": "object"
       },
+      "Consent": {
+        "properties": {
+          "current_version": {
+            "title": "Current Version",
+            "type": "string"
+          },
+          "given_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given At"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "current_version",
+          "version",
+          "given_at"
+        ],
+        "title": "Consent",
+        "type": "object"
+      },
+      "ConsentIn": {
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "ConsentIn",
+        "type": "object"
+      },
+      "DayBeforeAt": {
+        "properties": {
+          "time": {
+            "title": "Time",
+            "type": "string"
+          },
+          "type": {
+            "const": "day_before_at",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "time"
+        ],
+        "title": "DayBeforeAt",
+        "type": "object"
+      },
       "FieldError": {
         "properties": {
           "code": {
@@ -95,6 +166,248 @@
           "email"
         ],
         "title": "InviteStatus",
+        "type": "object"
+      },
+      "Me": {
+        "description": "Bootstraps the client (9.2). CR-030: no feature flags; `device_timezone` is the client's\n`X-Timezone` when it is an IANA zone, and `timezone_differs` says it is not hers.",
+        "properties": {
+          "consent": {
+            "$ref": "#/components/schemas/Consent"
+          },
+          "device_timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Timezone"
+          },
+          "health_mode": {
+            "enum": [
+              "standard",
+              "postpartum",
+              "ttc",
+              "avoid"
+            ],
+            "title": "Health Mode",
+            "type": "string"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/Profile"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/Settings"
+          },
+          "timezone_differs": {
+            "title": "Timezone Differs",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "profile",
+          "settings",
+          "consent",
+          "health_mode",
+          "device_timezone",
+          "timezone_differs"
+        ],
+        "title": "Me",
+        "type": "object"
+      },
+      "MinutesBefore": {
+        "properties": {
+          "minutes": {
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "type": {
+            "const": "minutes_before",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "minutes"
+        ],
+        "title": "MinutesBefore",
+        "type": "object"
+      },
+      "NotifPrefs": {
+        "properties": {
+          "appointment": {
+            "title": "Appointment",
+            "type": "boolean"
+          },
+          "checkin": {
+            "title": "Checkin",
+            "type": "boolean"
+          },
+          "late_period": {
+            "title": "Late Period",
+            "type": "boolean"
+          },
+          "medication": {
+            "title": "Medication",
+            "type": "boolean"
+          },
+          "period_due": {
+            "title": "Period Due",
+            "type": "boolean"
+          },
+          "task": {
+            "title": "Task",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "checkin",
+          "period_due",
+          "late_period",
+          "medication",
+          "appointment",
+          "task"
+        ],
+        "title": "NotifPrefs",
+        "type": "object"
+      },
+      "NotifPrefsChange": {
+        "additionalProperties": false,
+        "properties": {
+          "appointment": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Appointment"
+          },
+          "checkin": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkin"
+          },
+          "late_period": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Late Period"
+          },
+          "medication": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Medication"
+          },
+          "period_due": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Due"
+          },
+          "task": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task"
+          }
+        },
+        "title": "NotifPrefsChange",
+        "type": "object"
+      },
+      "OptionalFields": {
+        "properties": {
+          "bbt": {
+            "title": "Bbt",
+            "type": "boolean"
+          },
+          "discharge": {
+            "title": "Discharge",
+            "type": "boolean"
+          },
+          "intimacy": {
+            "title": "Intimacy",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "bbt",
+          "discharge",
+          "intimacy"
+        ],
+        "title": "OptionalFields",
+        "type": "object"
+      },
+      "OptionalFieldsChange": {
+        "additionalProperties": false,
+        "properties": {
+          "bbt": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bbt"
+          },
+          "discharge": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discharge"
+          },
+          "intimacy": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intimacy"
+          }
+        },
+        "title": "OptionalFieldsChange",
         "type": "object"
       },
       "PasskeyList": {
@@ -305,6 +618,117 @@
           "detail"
         ],
         "title": "Problem",
+        "type": "object"
+      },
+      "Profile": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "admin"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "display_name",
+          "role",
+          "timezone",
+          "locale",
+          "version"
+        ],
+        "title": "Profile",
+        "type": "object"
+      },
+      "ProfileChange": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 400,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          }
+        },
+        "title": "ProfileChange",
+        "type": "object"
+      },
+      "ProfileConflict": {
+        "description": "409 (9.1): the problem, with the current profile.",
+        "properties": {
+          "current": {
+            "$ref": "#/components/schemas/Profile"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "default": "about:blank",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "status",
+          "detail",
+          "current"
+        ],
+        "title": "ProfileConflict",
         "type": "object"
       },
       "ReauthOptionsRequest": {
@@ -634,6 +1058,272 @@
           "current"
         ],
         "title": "SessionOut",
+        "type": "object"
+      },
+      "Settings": {
+        "properties": {
+          "app_lock_enabled": {
+            "title": "App Lock Enabled",
+            "type": "boolean"
+          },
+          "app_lock_timeout_s": {
+            "title": "App Lock Timeout S",
+            "type": "integer"
+          },
+          "appointment_reminder_defaults": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "day_before_at": "#/components/schemas/DayBeforeAt",
+                  "minutes_before": "#/components/schemas/MinutesBefore"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/DayBeforeAt"
+                },
+                {
+                  "$ref": "#/components/schemas/MinutesBefore"
+                }
+              ]
+            },
+            "title": "Appointment Reminder Defaults",
+            "type": "array"
+          },
+          "checkin_time": {
+            "title": "Checkin Time",
+            "type": "string"
+          },
+          "discreet_notifications": {
+            "title": "Discreet Notifications",
+            "type": "boolean"
+          },
+          "notif_prefs": {
+            "$ref": "#/components/schemas/NotifPrefs"
+          },
+          "onboarding_completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Onboarding Completed At"
+          },
+          "optional_fields": {
+            "$ref": "#/components/schemas/OptionalFields"
+          },
+          "quiet_end": {
+            "title": "Quiet End",
+            "type": "string"
+          },
+          "quiet_start": {
+            "title": "Quiet Start",
+            "type": "string"
+          },
+          "temp_unit": {
+            "enum": [
+              "C",
+              "F"
+            ],
+            "title": "Temp Unit",
+            "type": "string"
+          },
+          "theme": {
+            "enum": [
+              "system",
+              "light",
+              "dark"
+            ],
+            "title": "Theme",
+            "type": "string"
+          },
+          "time_format": {
+            "title": "Time Format",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          },
+          "week_start": {
+            "title": "Week Start",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "theme",
+          "week_start",
+          "time_format",
+          "temp_unit",
+          "checkin_time",
+          "quiet_start",
+          "quiet_end",
+          "notif_prefs",
+          "discreet_notifications",
+          "optional_fields",
+          "app_lock_enabled",
+          "app_lock_timeout_s",
+          "appointment_reminder_defaults",
+          "onboarding_completed_at",
+          "version"
+        ],
+        "title": "Settings",
+        "type": "object"
+      },
+      "SettingsChange": {
+        "additionalProperties": false,
+        "properties": {
+          "checkin_time": {
+            "anyOf": [
+              {
+                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkin Time"
+          },
+          "discreet_notifications": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discreet Notifications"
+          },
+          "notif_prefs": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NotifPrefsChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "optional_fields": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OptionalFieldsChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quiet_end": {
+            "anyOf": [
+              {
+                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quiet End"
+          },
+          "quiet_start": {
+            "anyOf": [
+              {
+                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quiet Start"
+          },
+          "temp_unit": {
+            "anyOf": [
+              {
+                "enum": [
+                  "C",
+                  "F"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temp Unit"
+          },
+          "theme": {
+            "anyOf": [
+              {
+                "enum": [
+                  "system",
+                  "light",
+                  "dark"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme"
+          },
+          "week_start": {
+            "anyOf": [
+              {
+                "maximum": 7.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Start"
+          }
+        },
+        "title": "SettingsChange",
+        "type": "object"
+      },
+      "SettingsConflict": {
+        "description": "409 (9.1): the problem, with the current settings.",
+        "properties": {
+          "current": {
+            "$ref": "#/components/schemas/Settings"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "default": "about:blank",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "status",
+          "detail",
+          "current"
+        ],
+        "title": "SettingsConflict",
         "type": "object"
       },
       "SignInOptions": {
@@ -2686,6 +3376,406 @@
         "summary": "Healthz",
         "tags": [
           "platform"
+        ]
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "description": "Bootstraps the client (9.2): profile, settings, consent, health mode and how the device's\ntimezone compares with hers (CR-030).",
+        "operationId": "get_me_api_v1_me_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Timezone",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Timezone"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in, or the session has ended."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Account not activated (CR-014)."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has invalid fields."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "More than 300 requests in a minute on this session (9.1)."
+          }
+        },
+        "summary": "Get Me",
+        "tags": [
+          "me"
+        ]
+      },
+      "patch": {
+        "description": "SET-1: her display name and timezone.",
+        "operationId": "change_profile_api_v1_me_patch",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in, or the session has ended."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Account not activated (CR-014). Or: Missing X-LifeOS-Client header or wrong Origin."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileConflict"
+                }
+              }
+            },
+            "description": "The version in If-Match is not current; `current` holds it."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request body is too large."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has invalid fields."
+          },
+          "428": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "If-Match is missing (CR-004)."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "More than 300 requests in a minute on this session (9.1)."
+          }
+        },
+        "summary": "Change Profile",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/consent": {
+      "post": {
+        "description": "12.6, CR-030: her explicit consent to health data, at the current version; stored once.",
+        "operationId": "give_consent_api_v1_me_consent_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Consent"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in, or the session has ended."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Account not activated (CR-014). Or: Missing X-LifeOS-Client header or wrong Origin."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request body is too large."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has invalid fields."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "More than 300 requests in a minute on this session (9.1)."
+          }
+        },
+        "summary": "Give Consent",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/settings": {
+      "patch": {
+        "description": "SET-1 (week start, units), SET-2 (theme), SET-3 (notifications, quiet hours, check-in\ntime), SET-5 (discreet) and optional fields.",
+        "operationId": "change_settings_api_v1_me_settings_patch",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in, or the session has ended."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Account not activated (CR-014). Or: Missing X-LifeOS-Client header or wrong Origin."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsConflict"
+                }
+              }
+            },
+            "description": "The version in If-Match is not current; `current` holds it."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request body is too large."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has invalid fields."
+          },
+          "428": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "If-Match is missing (CR-004)."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "More than 300 requests in a minute on this session (9.1)."
+          }
+        },
+        "summary": "Change Settings",
+        "tags": [
+          "me"
         ]
       }
     },

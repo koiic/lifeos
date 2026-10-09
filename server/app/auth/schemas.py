@@ -18,19 +18,10 @@ from pydantic import (
 )
 from pydantic_core import PydanticCustomError
 
-from app.platform.text import clean_text
+from app.platform.text import DisplayName, clean_text
 
 # A practical shape check (one @, a dot in the domain, no spaces); the invite proves ownership.
 EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
-NAME_MAX = 100
-
-
-def clean_name(value: str) -> str:
-    """A display name: cleaned, 1-100 characters."""
-    value = clean_text(value)
-    if not 1 <= len(value) <= NAME_MAX:
-        raise ValueError("invalid name")
-    return value
 
 
 def check_email(value: str) -> str:
@@ -41,7 +32,6 @@ def check_email(value: str) -> str:
 
 
 Token = Annotated[str, StringConstraints(max_length=200)]
-DisplayName = Annotated[str, StringConstraints(max_length=4 * NAME_MAX), AfterValidator(clean_name)]
 Email = Annotated[str, StringConstraints(max_length=254), AfterValidator(clean_text)]
 NewEmail = Annotated[Email, AfterValidator(check_email)]
 # A WebAuthn PublicKeyCredential in its JSON form; verified by py_webauthn, not by shape here.

@@ -63,6 +63,7 @@ from app.auth.schemas import (
     Registration,
     SignedIn,
 )
+from app.health.service import seed_symptoms
 from app.notify.service import stop_session_notifications
 from app.platform.crypto import (
     DataKey,
@@ -639,7 +640,8 @@ class AuthService:
         invite: repo.Invite,
         now: datetime,
     ) -> DataKey:
-        """The user, their settings and wrapped DEK, and the invite spent; returns the DEK."""
+        """The user, their settings and wrapped DEK, her seeded symptoms, and the invite spent;
+        returns the DEK."""
         dek = generate_data_key()
         kek_version, dek_wrapped = wrap_dek(self._keyring, dek, user_id)
         try:
@@ -655,6 +657,7 @@ class AuthService:
             raise EmailInUse from None
         if not await repo.use_invite(tx, invite.id, user_id, now):
             raise InviteInvalid
+        await seed_symptoms(tx, user_id, dek)  # 7.4
         return dek
 
     async def _dek(self, tx: Transaction, user_id: uuid.UUID) -> DataKey:

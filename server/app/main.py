@@ -10,6 +10,8 @@ from fastapi.responses import JSONResponse
 from app.admin import api as admin_api
 from app.auth import api as auth_api
 from app.auth.service import AccountService, AuthService
+from app.core import api as core_api
+from app.core.service import MeService
 from app.notify import api as notify_api
 from app.notify.service import NotifyService
 from app.platform import client_errors, probes
@@ -51,6 +53,7 @@ def create_app(settings: Settings) -> FastAPI:
             if settings.env != "local":
                 await verify_role(admin_engine, ADMIN_WRITE_ROLE)
         app.state.account = AccountService(app.state.auth, admin_engine)
+        app.state.me = MeService(app.state.engine, keyring)
         app.state.notify = NotifyService(
             app.state.engine, vapid, keyring, local=settings.env == "local"
         )
@@ -98,6 +101,7 @@ def create_app(settings: Settings) -> FastAPI:
     app.include_router(auth_api.router)
     app.include_router(admin_api.router)
     app.include_router(notify_api.router)
+    app.include_router(core_api.router)
     return app
 
 
