@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { formatIsoDate, nowIso } from '../../lib/dates';
@@ -14,11 +14,14 @@ export function CheckInScreen() {
   const navigate = useNavigate();
   const me = useMe();
   const [open, setOpen] = useState(true);
+  const closingRef = useRef(false);
 
   const timezone = me.data?.profile.timezone;
   const date = searchParams.get('date') ?? formatIsoDate(nowIso(), timezone);
 
   const handleClose = () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
     setOpen(false);
     if (window.history.state && window.history.state.idx > 0) {
       navigate(-1);

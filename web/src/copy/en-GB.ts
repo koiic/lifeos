@@ -139,6 +139,13 @@ export const copy = {
       keep: 'Keep my timezone',
       switched: (city: string) => `Dates and reminders now follow ${city} time.`,
     },
+    willSync: 'Will sync',
+  },
+  offline: {
+    willSync: 'Will sync',
+    couldntSync: "Couldn't sync",
+    retry: 'Retry',
+    discard: 'Discard',
   },
   health: {
     title: 'Health',

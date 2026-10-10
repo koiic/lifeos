@@ -164,7 +164,7 @@ export function CheckInSheet({ open, date, onClose, onSaved }: CheckInSheetProps
 
   return (
     <Sheet open={open} title={copy.checkin.title} closeLabel={copy.checkin.close} onClose={onClose}>
-      {dailyLogQuery.isPending ? (
+      {dailyLogQuery.isPending && dailyLogQuery.fetchStatus === 'fetching' ? (
         <Skeleton label={copy.common.loading} shapes={['line', 'block']} />
       ) : (
         <CheckInForm

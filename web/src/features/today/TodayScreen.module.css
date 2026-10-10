@@ -1,0 +1,28 @@
+.syncChip {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  width: fit-content;
+  min-height: var(--size-touch-target);
+  padding: var(--space-1) var(--space-3);
+  border: var(--size-border) solid var(--border-strong);
+  border-radius: var(--radius-chip);
+  background-color: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-label);
+  cursor: pointer;
+  transition-property: background-color;
+  transition-duration: var(--motion-duration-fast);
+  transition-timing-function: var(--motion-ease-out);
+}
+
+.syncChip:hover {
+  background-color: var(--surface-tint);
+}
+
+.syncChip:focus-visible {
+  outline: var(--surface-ink) solid var(--size-focus-ring);
+  outline-offset: var(--size-focus-offset);
+}

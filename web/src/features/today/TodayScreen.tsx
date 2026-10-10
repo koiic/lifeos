@@ -4,11 +4,14 @@ import { copy } from '../../copy/en-GB';
 import { cityOf, formatTodayDate, nowIso } from '../../lib/dates';
 import { greetingFor } from '../../lib/greeting';
 import { type Me, useChangeProfile, useMe } from '../../lib/me/me';
+import { useSync } from '../../lib/offline';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { ErrorState } from '../../ui/ErrorState';
+import { Icon } from '../../ui/icons';
 import { Skeleton } from '../../ui/Skeleton';
 import { Stack } from '../../ui/Stack';
+import styles from './TodayScreen.module.css';
 
 const t = copy.today;
 // The device timezone she chose to keep her own over, on this device (CR-030).
@@ -70,6 +73,7 @@ export function TodayScreen() {
   const me = useMe();
   const heading = useRef<HTMLHeadingElement>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const { pendingCount, syncNow } = useSync();
 
   useEffect(() => {
     if (me.isSuccess) heading.current?.focus();
@@ -104,6 +108,17 @@ export function TodayScreen() {
         <h1 ref={heading} tabIndex={-1}>
           {t.greetingWithName(greeting, profile.display_name)}
         </h1>
+        {pendingCount > 0 && (
+          <button
+            type="button"
+            className={styles.syncChip}
+            onClick={() => void syncNow()}
+            aria-label={t.willSync}
+          >
+            <Icon name="more" size="sm" />
+            <span>{t.willSync}</span>
+          </button>
+        )}
       </Stack>
       <p role="status">{status}</p>
       <TimezonePrompt me={me.data} onSwitched={(city) => setStatus(t.timezone.switched(city))} />

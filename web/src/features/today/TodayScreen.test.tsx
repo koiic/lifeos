@@ -2,6 +2,7 @@ import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { copy } from '../../copy/en-GB';
+import * as offlineModule from '../../lib/offline';
 import { fakeApi, problem } from '../../lib/testing/fakeApi';
 import { meBody } from '../../lib/testing/me';
 import { renderRoute } from '../../lib/testing/renderRoute';
@@ -101,5 +102,49 @@ describe('[SET-1] her phone is in another timezone (spec 11.7, CR-030)', () => {
     open();
     await screen.findByRole('heading', { level: 1 });
     expect(screen.queryByRole('button', { name: t.timezone.keep })).toBeNull();
+  });
+});
+
+describe('[TOD-7] sync status: pending offline changes shown as "Will sync" chip', () => {
+  it('displays "Will sync" chip while outbox is non-empty and triggers sync on tap', async () => {
+    vi.setSystemTime(new Date('2026-10-08T08:00:00Z'));
+    fakeApi({ [ME]: { body: meBody() } });
+    const mockSyncNow = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(offlineModule, 'useSync').mockReturnValue({
+      pendingCount: 2,
+      isSyncing: false,
+      isPaused: false,
+      lastSyncedAt: null,
+      lastError: null,
+      syncNow: mockSyncNow,
+    });
+
+    const { container } = open();
+    await screen.findByRole('heading', { level: 1 });
+
+    const syncBtn = screen.getByRole('button', { name: t.willSync });
+    expect(syncBtn).toBeDefined();
+
+    fireEvent.click(syncBtn);
+    expect(mockSyncNow).toHaveBeenCalledOnce();
+
+    await expectNoAxeViolations(container);
+  });
+
+  it('hides "Will sync" chip when outbox is empty', async () => {
+    vi.setSystemTime(new Date('2026-10-08T08:00:00Z'));
+    fakeApi({ [ME]: { body: meBody() } });
+    vi.spyOn(offlineModule, 'useSync').mockReturnValue({
+      pendingCount: 0,
+      isSyncing: false,
+      isPaused: false,
+      lastSyncedAt: null,
+      lastError: null,
+      syncNow: vi.fn(),
+    });
+
+    open();
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.queryByRole('button', { name: t.willSync })).toBeNull();
   });
 });
