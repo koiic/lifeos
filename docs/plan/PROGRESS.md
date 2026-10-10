@@ -33,7 +33,7 @@ Spec version: 1 · Plan version: 1
 
 | ID | Task | Owns requirements | Depends on | Status | Commit | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| T18 | Daily logs API with validation and last-writer-wins | CHK-2 | T09, T05 | todo | | |
+| T18 | Daily logs API with validation and last-writer-wins | CHK-2 | T09, T05 | done | 093f8a9c52aa | 24 tests pass; health coverage >90%; LWW, outbox event, and AES-256-GCM encryption verified |
 | T19 | Symptom catalogue API with custom symptoms | — | T09 | todo | | |
 | T20 | Period start/end endpoints and bleed-episode logic | PER-4, PER-5 | T18 | todo | | |
 | T21 | Calendar month endpoint | — | T20 | todo | | |
