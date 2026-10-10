@@ -41,7 +41,7 @@ Spec version: 1 · Plan version: 1
 | T23 | Offline layer: IndexedDB outbox, encrypted query cache, sync engine, sync chip | CHK-5, TOD-7 | T22 | done | 2958541 | IndexedDB outbox with FIFO ordering, WebCrypto AES-GCM encrypted query cache persistence, sync engine with idempotency keys and automatic reconnect flush; Playwright J9 and 26 tagged unit tests passing |
 | T24 | Health calendar screen, day editing and period start/end controls | CSC-3, PER-1, PER-3 | T21, T23 | done | fb44de4 | Playwright J4 passes: period start/end toggles, calendar month grid renders flow/predictions/fertile window/logged dots, tap past day navigates to check-in to edit flow; axe clean in both themes |
 | T25 | Today: check-in card and streak | TOD-3, TOD-5 | T22 | done | e4e2ff0 | Unit, integration, E2E journey, and verification recipe passed |
-| GATE-M2 | Milestone gate review (plan section 8) | — | all M2 tasks | todo | | |
+| GATE-M2 | Milestone gate review (plan section 8) | — | all M2 tasks | done |  | report: docs/plan/gates/M2.md |
 
 ## M3 Predictions (weeks 5–6)
 
