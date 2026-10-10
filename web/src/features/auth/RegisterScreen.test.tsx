@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { copy } from '../../copy/en-GB';
 import { createPasskey, PasskeyCancelled } from '../../lib/auth/webauthn';
 import { fakeApi, problem } from '../../lib/testing/fakeApi';
+import { meBody } from '../../lib/testing/me';
 import { renderRoute } from '../../lib/testing/renderRoute';
 import { expectNoAxeViolations } from '../../ui/testing/axe';
 import { RegisterScreen } from './RegisterScreen';
@@ -75,6 +76,31 @@ describe('[AUTH-1] register: invite only', () => {
     fireEvent.click(await screen.findByRole('button', { name: copy.common.retry }));
     expect(await screen.findByLabelText(t.name)).toBeDefined();
     expect(api.count(VERIFY_INVITE)).toBe(2);
+  });
+});
+
+describe('[SET-1] her timezone is auto-detected right after registering (CR-030)', () => {
+  it("sets her profile timezone to the device's when they differ", async () => {
+    const lagos = meBody({ device_timezone: 'Africa/Lagos', timezone_differs: true });
+    const api = fakeApi({
+      [VERIFY_INVITE]: { body: { valid: true, email: 'zee@example.test' } },
+      [OPTIONS]: { body: { challenge: 'c', rp: { id: 'localhost' } } },
+      [VERIFY]: {
+        status: 201,
+        body: { user_id: 'u1', display_name: 'Zee', recovery_codes: CODES },
+      },
+      ['GET /api/v1/me']: { body: lagos },
+      ['PATCH /api/v1/me']: { body: { ...lagos.profile, timezone: 'Africa/Lagos', version: 'p2' } },
+    });
+    open();
+    await screen.findByLabelText(t.name);
+    type(t.name, 'Zee');
+    fireEvent.click(screen.getByRole('button', { name: t.createPasskey }));
+    fireEvent.click(await screen.findByRole('button', { name: copy.auth.codes.done }));
+    await waitFor(() =>
+      expect(api.bodies('PATCH /api/v1/me')).toEqual([{ timezone: 'Africa/Lagos' }]),
+    );
+    expect(api.headers('PATCH /api/v1/me')[0]?.get('If-Match')).toBe('"p1"');
   });
 });
 

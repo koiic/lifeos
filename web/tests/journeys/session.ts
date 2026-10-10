@@ -27,11 +27,21 @@ export async function addAuthenticator(page: Page, userVerified = true): Promise
   return { cdp, id: authenticatorId };
 }
 
+const g = copy.today.greeting;
+const GREETING = new RegExp(`^(${[g.morning, g.afternoon, g.evening, g.night].join('|')}), `);
+
+/** Today's heading: her greeting (TOD-1), whatever the time of day. */
+export function todayHeading(page: Page) {
+  return page.getByRole('heading', { level: 1, name: GREETING });
+}
+
 /** [ONB-1] J1 step 3: in a browser tab the install guide comes next; she carries on in the tab. */
 export async function carryOnInBrowser(page: Page) {
   await expect(page.getByRole('heading', { name: copy.install.title })).toBeVisible();
   await page.getByRole('button', { name: copy.install.continue }).click();
-  await expect(page.getByRole('heading', { name: copy.today.title })).toBeVisible();
+  // Today (T17): the greeting is the heading, under the bottom bar's shell.
+  await expect(todayHeading(page)).toBeVisible();
+  await expect(page.getByRole('navigation', { name: copy.nav.label })).toBeVisible();
 }
 
 export async function registerWithPasskey(page: Page, token: string, email = 'zee@example.test') {

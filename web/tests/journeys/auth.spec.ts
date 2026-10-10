@@ -8,6 +8,7 @@ import {
   type Authenticator,
   carryOnInBrowser,
   registerWithPasskey,
+  todayHeading,
 } from './session';
 import { createInvite, expireRecentAuth } from './stack';
 
@@ -146,21 +147,21 @@ test.describe('auth journeys (J1, J11)', () => {
     await page.goto('/today');
     await expect(page).toHaveURL(/\/signin\?next=%2Ftoday$/);
     await page.getByRole('button', { name: signIn.passkey }).click();
-    await expect(page.getByRole('heading', { name: copy.today.title })).toBeVisible();
+    await expect(todayHeading(page)).toBeVisible();
 
     // [AUTH-6] Within 5 minutes in the background: no lock.
     await background(page, 4 * 60);
-    await expect(page.getByRole('heading', { name: copy.today.title })).toBeVisible();
+    await expect(todayHeading(page)).toBeVisible();
 
     // [AUTH-6] More than 5 minutes: the lock screen, and nothing of the app behind it.
     await background(page, 5 * 60 + 1);
     const lockScreen = page.getByRole('dialog', { name: lock.title });
     await expect(lockScreen).toBeVisible();
-    await expect(page.getByRole('heading', { name: copy.today.title })).toHaveCount(0);
+    await expect(todayHeading(page)).toHaveCount(0);
 
     // Unlock with the passkey (user verification).
     await lockScreen.getByRole('button', { name: lock.passkey }).click();
-    await expect(page.getByRole('heading', { name: copy.today.title })).toBeVisible();
+    await expect(todayHeading(page)).toBeVisible();
 
     // Lock again; a cold start keeps it locked; unlock with the PIN (a wrong one first).
     await background(page, 6 * 60);
@@ -172,7 +173,7 @@ test.describe('auth journeys (J1, J11)', () => {
     await expect(lockScreen.getByText(lock.wrongPin)).toBeVisible();
     await lockScreen.getByLabel(lock.pin).fill('246810');
     await lockScreen.getByRole('button', { name: lock.unlock, exact: true }).click();
-    await expect(page.getByRole('heading', { name: copy.today.title })).toBeVisible();
+    await expect(todayHeading(page)).toBeVisible();
 
     // [AUTH-4] Later (recent authentication over, CR-017): new recovery codes ask "Confirm it's
     // you" first, answered with her passkey; then an old, unused code no longer works.
@@ -201,7 +202,7 @@ test.describe('auth journeys (J1, J11)', () => {
     await copyPasskeys(phone, await addAuthenticator(laptopPage));
     await laptopPage.goto('/signin');
     await laptopPage.getByRole('button', { name: signIn.passkey }).click();
-    await expect(laptopPage.getByRole('heading', { name: copy.today.title })).toBeVisible();
+    await expect(todayHeading(laptopPage)).toBeVisible();
 
     await page.goto('/settings/security');
     const sessions = page.getByRole('region', { name: sec.sessions.title });
@@ -269,7 +270,7 @@ test.describe('auth journeys (J1, J11)', () => {
     await page.getByLabel(signIn.password).fill(password);
     await page.getByLabel(signIn.code).fill(await freshCode(page, secret, usedAt));
     await page.getByRole('button', { name: signIn.submit }).click();
-    await expect(page.getByRole('heading', { name: copy.today.title })).toBeVisible();
+    await expect(todayHeading(page)).toBeVisible();
 
     // Settings: she adds a passkey to her password account (just signed in: no extra check).
     await page.goto('/settings/security');
@@ -282,7 +283,7 @@ test.describe('auth journeys (J1, J11)', () => {
     await signOutFromSettings(page);
     phone = await newPhone(page, phone);
     await signInWithRecoveryCode(page, email, firstCode ?? '');
-    await expect(page.getByRole('heading', { name: copy.today.title })).toBeVisible();
+    await expect(todayHeading(page)).toBeVisible();
 
     // [AUTH-4] The same code does not work twice; another one does.
     await signOutFromSettings(page);
@@ -291,6 +292,6 @@ test.describe('auth journeys (J1, J11)', () => {
     await page.getByLabel(signIn.recoveryCode).fill(secondCode ?? '');
     await newPhone(page, phone);
     await page.getByRole('button', { name: signIn.recoverySubmit }).click();
-    await expect(page.getByRole('heading', { name: copy.today.title })).toBeVisible();
+    await expect(todayHeading(page)).toBeVisible();
   });
 });

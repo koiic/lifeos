@@ -1,0 +1,15 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.content {
+  flex: 1;
+}
+
+/* Spec 5.1: the bar stays at the bottom of the screen while the page scrolls. */
+.bar {
+  position: sticky;
+  bottom: 0;
+}

@@ -8,6 +8,7 @@ import { hasReason, REASON, signOut } from '../lib/auth/session';
 import { PasskeyCancelled, signWithPasskey } from '../lib/auth/webauthn';
 import { DEFAULT_LOCK_TIMEOUT_S } from '../lib/lock/rules';
 import { useLockStore } from '../lib/lock/store';
+import { meQuery } from '../lib/me/me';
 import { startLockWatch } from '../lib/lock/watch';
 import { LockScreen } from '../ui/LockScreen';
 
@@ -35,8 +36,11 @@ export function AppLock({ children }: { children: ReactNode }) {
     app.current?.toggleAttribute('inert', covered);
   }, [covered, locked]);
 
-  // The per-user timeout comes with GET /me (T09); until then the spec default.
-  useEffect(() => startLockWatch({ timeoutS: DEFAULT_LOCK_TIMEOUT_S }), []);
+  // Her timeout from GET /me (CR-025); the spec default until it loads. /me is not fetched
+  // while locked (nothing of hers loads behind the lock screen).
+  const me = useQuery({ ...meQuery, enabled: !locked });
+  const timeoutS = me.data?.settings.app_lock_timeout_s ?? DEFAULT_LOCK_TIMEOUT_S;
+  useEffect(() => startLockWatch({ timeoutS }), [timeoutS]);
 
   const passkeys = useQuery({
     queryKey: ['passkeys'],

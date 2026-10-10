@@ -199,3 +199,38 @@ describe('apiRequest details', () => {
     ).resolves.toBeUndefined();
   });
 });
+
+describe('versions and conflicts (spec 9.1, CR-004)', () => {
+  it('sends extra headers such as If-Match', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ theme: 'dark' }));
+    await apiRequest('PATCH', '/api/v1/me/settings', { theme: 'dark' }, {}, { 'If-Match': '"v1"' });
+    expect(new Headers(sentInit().headers).get('If-Match')).toBe('"v1"');
+  });
+
+  it('keeps the problem body, so a 409 can hand over the current resource', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(
+        {
+          type: 'about:blank',
+          title: 'Conflict',
+          status: 409,
+          detail: 'Changed elsewhere.',
+          current: { theme: 'light', version: 'v2' },
+        },
+        409,
+        'application/problem+json',
+      ),
+    );
+    const error = await apiRequest('PATCH', '/api/v1/me/settings', { theme: 'dark' }).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).body['current']).toEqual({ theme: 'light', version: 'v2' });
+  });
+
+  it('an error without a JSON body has an empty problem body', async () => {
+    fetchMock.mockResolvedValue(new Response('down', { status: 502, statusText: 'Bad Gateway' }));
+    const error = (await apiRequest('GET', '/api/v1/healthz').catch((e: unknown) => e)) as ApiError;
+    expect(error.body).toEqual({});
+  });
+});

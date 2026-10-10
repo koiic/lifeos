@@ -5,6 +5,7 @@ import { copy } from '../../copy/en-GB';
 import { REASON } from '../../lib/auth/session';
 import { createPasskey, signWithPasskey } from '../../lib/auth/webauthn';
 import { type FakeApi, fakeApi, problem, type Route } from '../../lib/testing/fakeApi';
+import { meBody } from '../../lib/testing/me';
 import { renderRoute } from '../../lib/testing/renderRoute';
 import { expectNoAxeViolations } from '../../ui/testing/axe';
 import { SecurityScreen } from './SecurityScreen';
@@ -15,6 +16,7 @@ vi.mock('../../lib/auth/webauthn', async (original) => ({
   signWithPasskey: vi.fn(),
 }));
 
+const ME = 'GET /api/v1/me';
 const t = copy.settings.security;
 const SESSIONS = 'GET /api/v1/auth/sessions';
 const PASSKEYS = 'GET /api/v1/auth/passkeys';
@@ -51,6 +53,7 @@ const PASSKEY = {
 
 function setup(extra: Record<string, Route> = {}): FakeApi {
   return fakeApi({
+    [ME]: { body: meBody() },
     [SESSIONS]: { body: { items: [PHONE, LAPTOP], next_cursor: null } },
     [PASSKEYS]: { body: { items: [PASSKEY], next_cursor: null } },
     ...extra,
@@ -391,5 +394,17 @@ describe('keyboard and screen reader users keep their place (WCAG 2.4.3)', () =>
     await lock.findByText(t.pin.saved);
     fireEvent.click(lock.getByRole('button', { name: copy.common.dismiss }));
     expect(document.activeElement).toBe(lock.getByRole('heading', { name: t.pin.title }));
+  });
+});
+
+describe('[AUTH-6] lock after (CR-025: spec 11.6 app_lock_timeout_s)', () => {
+  it('shows her timeout and saves a new one with PUT /auth/app-lock', async () => {
+    const api = setup({ 'PUT /api/v1/auth/app-lock': { status: 204 } });
+    open();
+    const select = (await screen.findByLabelText(t.lockAfter.label)) as HTMLSelectElement;
+    await waitFor(() => expect(select.value).toBe('300'));
+    fireEvent.change(select, { target: { value: '900' } });
+    expect(await screen.findByText(t.lockAfter.saved)).toBeDefined();
+    expect(api.bodies('PUT /api/v1/auth/app-lock')).toEqual([{ timeout_s: 900 }]);
   });
 });

@@ -12,8 +12,51 @@ export const copy = {
     title: 'Something went wrong',
     reload: 'Reload',
   },
+  nav: {
+    label: 'Main',
+    today: 'Today',
+    health: 'Health',
+    add: 'Add',
+    calendar: 'Calendar',
+    more: 'More',
+  },
+  quickAdd: {
+    title: 'Add',
+    close: 'Close',
+    empty: 'Quick add is on its way',
+    emptyBody:
+      'Soon you can add a period, check-in, medicine, appointment, task or note from here.',
+  },
   today: {
     title: 'Today',
+    greeting: {
+      morning: 'Good morning',
+      afternoon: 'Good afternoon',
+      evening: 'Good evening',
+      night: 'Hello',
+    },
+    greetingWithName: (greeting: string, name: string) => `${greeting}, ${name}`,
+    timezone: {
+      title: (city: string) => `You seem to be in ${city}`,
+      body: 'Switch your timezone so dates and reminders follow you?',
+      switch: (city: string) => `Switch to ${city} time`,
+      keep: 'Keep my timezone',
+      switched: (city: string) => `Dates and reminders now follow ${city} time.`,
+    },
+  },
+  health: {
+    title: 'Health',
+    empty: 'Your cycle will live here',
+    emptyBody: 'Period logging, your cycle ring and medicines arrive in the next updates.',
+  },
+  calendar: {
+    title: 'Calendar',
+    empty: 'Your calendar will live here',
+    emptyBody: 'Appointments, doses and tasks will show by day once you add them.',
+  },
+  more: {
+    title: 'More',
+    settings: 'Settings',
   },
   auth: {
     register: {
@@ -216,6 +259,40 @@ export const copy = {
     signOut: 'Sign out',
     failed: "That didn't work. Try again.",
   },
+  settingsHome: {
+    title: 'Settings',
+    profile: 'Profile',
+    theme: 'Theme',
+    security: 'Security and sessions',
+    notifications: 'Notifications',
+  },
+  profile: {
+    title: 'Profile',
+    name: 'Your name',
+    nameHint: "What you'd like Life OS to call you",
+    nameRequired: 'Enter a name',
+    nameTooLong: 'Use 100 characters or fewer',
+    timezone: 'Timezone',
+    timezoneHint: 'Dates and reminders follow this',
+    weekStart: 'Week starts on',
+    days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    temperature: 'Temperature',
+    celsius: 'Celsius (°C)',
+    fahrenheit: 'Fahrenheit (°F)',
+    save: 'Save',
+    saved: 'Saved.',
+    conflict: "This changed on another device. We've loaded the latest; check it and save again.",
+    failed: "That didn't save. Try again.",
+  },
+  theme: {
+    title: 'Theme',
+    legend: 'Appearance',
+    system: 'System',
+    light: 'Light (Sorbet)',
+    dark: 'Dark (Night Garden)',
+    systemHint: 'System follows your phone: Sorbet by day, Night Garden when your phone is dark.',
+    failed: "That didn't save. Try again.",
+  },
   settings: {
     security: {
       title: 'Security',
@@ -248,10 +325,23 @@ export const copy = {
         revoke: (device: string) => `Sign out ${device}`,
         revoked: 'Device signed out',
       },
+      lockAfter: {
+        title: 'Lock after',
+        intro: 'How long Life OS can stay in the background before it locks.',
+        label: 'Time in the background',
+        options: [
+          { seconds: 60, label: '1 minute' },
+          { seconds: 300, label: '5 minutes' },
+          { seconds: 900, label: '15 minutes' },
+          { seconds: 1800, label: '30 minutes' },
+          { seconds: 3600, label: '1 hour' },
+        ],
+        custom: (minutes: number) => `${String(minutes)} minutes`,
+        saved: 'Saved.',
+      },
       pin: {
         title: 'App lock PIN',
-        intro:
-          'Life OS locks after 5 minutes in the background. Unlock with your passkey or this PIN.',
+        intro: 'When Life OS locks, unlock it with your passkey or this PIN.',
         new: 'New 6-digit PIN',
         repeat: 'Type it again',
         save: 'Save PIN',

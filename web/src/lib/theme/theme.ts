@@ -16,9 +16,14 @@ export type BackgroundReader = () => string;
 const readBackgroundToken: BackgroundReader = () =>
   getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
 
+/** `prefers-color-scheme`, where the browser can tell; otherwise none (light). */
+function darkQuery(): MediaQueryList | null {
+  return typeof window.matchMedia === 'function' ? window.matchMedia(DARK_QUERY) : null;
+}
+
 export function resolveTheme(setting: ThemeSetting): Theme {
   if (setting !== 'system') return setting;
-  return window.matchMedia(DARK_QUERY).matches ? 'dark' : 'light';
+  return darkQuery()?.matches === true ? 'dark' : 'light';
 }
 
 function themeColorMeta(): HTMLMetaElement {
@@ -44,8 +49,8 @@ export function applyTheme(
   readBackground: BackgroundReader = readBackgroundToken,
 ): () => void {
   set(resolveTheme(setting), readBackground);
-  if (setting !== 'system') return () => undefined;
-  const query = window.matchMedia(DARK_QUERY);
+  const query = setting === 'system' ? darkQuery() : null;
+  if (query === null) return () => undefined;
   const follow = (event: { matches: boolean }) => {
     set(event.matches ? 'dark' : 'light', readBackground);
   };

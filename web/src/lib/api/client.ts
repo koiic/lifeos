@@ -32,6 +32,8 @@ export class ApiError extends Error {
   readonly fieldErrors: readonly FieldError[];
   /** Seconds from a `Retry-After` header (429 lockouts and rate limits, spec 4.1, 9.1). */
   readonly retryAfterS: number | undefined;
+  /** The whole problem body, e.g. a 409's `current` resource (9.1); empty when there was none. */
+  readonly body: Readonly<Record<string, unknown>>;
 
   constructor(
     status: number,
@@ -39,6 +41,7 @@ export class ApiError extends Error {
     detail: string,
     fieldErrors: FieldError[] = [],
     retryAfterS?: number,
+    body: Record<string, unknown> = {},
   ) {
     super(`${String(status)} ${title}`);
     this.name = 'ApiError';
@@ -47,6 +50,7 @@ export class ApiError extends Error {
     this.detail = detail;
     this.fieldErrors = fieldErrors;
     this.retryAfterS = retryAfterS;
+    this.body = body;
   }
 }
 
@@ -89,6 +93,7 @@ async function toApiError(response: Response): Promise<ApiError> {
       typeof body.detail === 'string' ? body.detail : '',
       errors,
       wait,
+      typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {},
     );
   }
   return new ApiError(response.status, response.statusText, '', [], wait);
@@ -115,6 +120,7 @@ export async function apiRequest<P extends ApiPath, M extends Method>(
   path: P,
   body?: RequestBody<Operation<P, M>>,
   params: Record<string, string> = {},
+  extraHeaders: Record<string, string> = {},
 ): Promise<SuccessBody<Operation<P, M>>> {
   const url = fillPath(path, params);
   const headers = new Headers({
@@ -123,6 +129,7 @@ export async function apiRequest<P extends ApiPath, M extends Method>(
     'X-LifeOS-Client': 'web',
     // Spec 11.7: lets the server warn when device and profile timezones differ.
     'X-Timezone': timezone(),
+    ...extraHeaders,
   });
   const init: RequestInit = { method, headers, credentials: 'same-origin' };
   if (body !== undefined) {

@@ -16,6 +16,8 @@ export interface FakeApi {
   bodies(route: string): unknown[];
   /** How many times a route was called. */
   count(route: string): number;
+  /** Request headers sent to a route, in order. */
+  headers(route: string): Headers[];
   /** Replace or add routes. */
   set(routes: Record<string, Route>): void;
 }
@@ -33,6 +35,7 @@ export function fakeApi(initial: Record<string, Route>): FakeApi {
   const routes = new Map(Object.entries(initial));
   const seen = new Map<string, unknown[]>();
   const used = new Map<string, number>();
+  const sentHeaders = new Map<string, Headers[]>();
 
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
@@ -41,6 +44,7 @@ export function fakeApi(initial: Record<string, Route>): FakeApi {
     if (route === undefined) throw new Error(`fakeApi: no route for ${key}`);
     const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
     seen.set(key, [...(seen.get(key) ?? []), body]);
+    sentHeaders.set(key, [...(sentHeaders.get(key) ?? []), new Headers(init?.headers)]);
     const n = used.get(key) ?? 0;
     used.set(key, n + 1);
     const reply =
@@ -60,6 +64,7 @@ export function fakeApi(initial: Record<string, Route>): FakeApi {
   return {
     bodies: (route) => seen.get(route) ?? [],
     count: (route) => used.get(route) ?? 0,
+    headers: (route) => sentHeaders.get(route) ?? [],
     set: (more) => {
       for (const [key, value] of Object.entries(more)) routes.set(key, value);
     },

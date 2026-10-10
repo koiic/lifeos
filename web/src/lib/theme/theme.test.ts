@@ -106,3 +106,18 @@ describe('theme (spec 5.3: data-theme on <html>; 11.7: theme-color follows the t
     }
   });
 });
+
+describe('without matchMedia (very old browsers, test environments)', () => {
+  it('system means light and nothing is followed', () => {
+    const original = window.matchMedia;
+    // @ts-expect-error -- removing the API on purpose
+    delete window.matchMedia;
+    try {
+      const stop = applyTheme('system', () => 'bg');
+      expect(document.documentElement.dataset.theme).toBe('light');
+      stop();
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+});

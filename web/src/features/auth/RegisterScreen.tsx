@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { copy } from '../../copy/en-GB';
 import { api, ApiError } from '../../lib/api';
+import { adoptDeviceTimezone } from '../../lib/me/me';
 import { startSession } from '../../lib/auth/session';
 import { needsInstallGuide } from '../../lib/install/install';
 import { createPasskey } from '../../lib/auth/webauthn';
@@ -186,6 +187,8 @@ export function RegisterScreen() {
 
   const finish = () => {
     startSession(queryClient);
+    // CR-030: her timezone follows the device's from the start (SET-1 "auto-detected").
+    void adoptDeviceTimezone(queryClient);
     // J1 step 3: in a browser tab, the install guide comes next (ONB-1).
     navigate(needsInstallGuide() ? '/install' : '/today', { replace: true });
   };

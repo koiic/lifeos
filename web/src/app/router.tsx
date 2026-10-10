@@ -1,6 +1,8 @@
 import { Navigate, Outlet, type RouteObject } from 'react-router-dom';
 
+import { ThemeSync } from '../lib/theme/ThemeSync';
 import { AppLock } from './AppLock';
+import { AppShell } from './AppShell';
 import { PushRefresh } from './PushRefresh';
 import { RouteErrorBoundary, type RouteHandle } from './ErrorBoundary';
 import { RequireSession } from './RequireSession';
@@ -13,6 +15,7 @@ function SignedIn() {
     <RequireSession>
       <AppLock>
         <PushRefresh />
+        <ThemeSync />
         <Outlet />
       </AppLock>
     </RequireSession>
@@ -70,12 +73,80 @@ export const routes: RouteObject[] = [
         handle: handle('/'),
         children: [
           {
-            path: 'today',
-            handle: handle('/today'),
-            lazy: async () => {
-              const { TodayScreen } = await import('../features/today/TodayScreen');
-              return { Component: TodayScreen };
-            },
+            // Spec 5.1: the tabs and Settings sit in the shell with the bottom bar.
+            element: <AppShell />,
+            handle: handle('/'),
+            children: [
+              {
+                path: 'today',
+                handle: handle('/today'),
+                lazy: async () => {
+                  const { TodayScreen } = await import('../features/today/TodayScreen');
+                  return { Component: TodayScreen };
+                },
+              },
+              {
+                path: 'health',
+                handle: handle('/health'),
+                element: <Navigate to="/health/cycle" replace />,
+              },
+              {
+                path: 'health/cycle',
+                handle: handle('/health/cycle'),
+                lazy: async () => {
+                  const { HealthScreen } = await import('../features/health/HealthScreen');
+                  return { Component: HealthScreen };
+                },
+              },
+              {
+                path: 'calendar',
+                handle: handle('/calendar'),
+                lazy: async () => {
+                  const { CalendarScreen } = await import('../features/calendar/CalendarScreen');
+                  return { Component: CalendarScreen };
+                },
+              },
+              {
+                path: 'more',
+                handle: handle('/more'),
+                lazy: async () => {
+                  const { MoreScreen } = await import('../features/more/MoreScreen');
+                  return { Component: MoreScreen };
+                },
+              },
+              {
+                path: 'settings',
+                handle: handle('/settings'),
+                lazy: async () => {
+                  const { SettingsScreen } = await import('../features/settings/SettingsScreen');
+                  return { Component: SettingsScreen };
+                },
+              },
+              {
+                path: 'settings/profile',
+                handle: handle('/settings/profile'),
+                lazy: async () => {
+                  const { ProfileScreen } = await import('../features/settings/ProfileScreen');
+                  return { Component: ProfileScreen };
+                },
+              },
+              {
+                path: 'settings/theme',
+                handle: handle('/settings/theme'),
+                lazy: async () => {
+                  const { ThemeScreen } = await import('../features/settings/ThemeScreen');
+                  return { Component: ThemeScreen };
+                },
+              },
+              {
+                path: 'settings/security',
+                handle: handle('/settings/security'),
+                lazy: async () => {
+                  const { SecurityScreen } = await import('../features/settings/SecurityScreen');
+                  return { Component: SecurityScreen };
+                },
+              },
+            ],
           },
           {
             path: 'setup/notifications',
@@ -84,14 +155,6 @@ export const routes: RouteObject[] = [
               const { NotificationsScreen } =
                 await import('../features/onboarding/NotificationsScreen');
               return { Component: NotificationsScreen };
-            },
-          },
-          {
-            path: 'settings/security',
-            handle: handle('/settings/security'),
-            lazy: async () => {
-              const { SecurityScreen } = await import('../features/settings/SecurityScreen');
-              return { Component: SecurityScreen };
             },
           },
         ],

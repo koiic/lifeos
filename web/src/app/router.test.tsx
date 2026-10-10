@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { copy } from '../copy/en-GB';
 import { REASON } from '../lib/auth/session';
 import { refreshSubscription } from '../lib/push/push';
+import { meBody } from '../lib/testing/me';
 import { fakeApi, problem } from '../lib/testing/fakeApi';
 import { routes } from './router';
 
@@ -24,7 +25,11 @@ const SESSIONS = 'GET /api/v1/auth/sessions';
 // Lazy routes import their screen chunk first; under coverage instrumentation that takes longer
 // than Testing Library's default 1 s wait.
 const LAZY = { timeout: 5_000 };
-const signedIn = () => fakeApi({ [SESSIONS]: { body: { items: [], next_cursor: null } } });
+const signedIn = () =>
+  fakeApi({
+    [SESSIONS]: { body: { items: [], next_cursor: null } },
+    'GET /api/v1/me': { body: meBody() },
+  });
 
 function renderAt(url: string) {
   const router = createMemoryRouter(routes, { initialEntries: [url] });
@@ -53,9 +58,10 @@ describe('router', () => {
   it('redirects / to /today and loads the Today route lazily when signed in', async () => {
     signedIn();
     const router = renderAt('/');
-    expect(await screen.findByRole('heading', { name: copy.today.title }, LAZY)).toBeDefined();
+    // The first route test transforms the shell and Today chunks while other files run.
+    expect(await screen.findByRole('heading', { level: 1 }, { timeout: 12_000 })).toBeDefined();
     expect(router.state.location.pathname).toBe('/today');
-  });
+  }, 15_000);
 
   it('declares every screen route as lazy (code-split)', () => {
     for (const path of [
@@ -66,6 +72,12 @@ describe('router', () => {
       'settings/security',
       'install',
       'setup/notifications',
+      'health/cycle',
+      'calendar',
+      'more',
+      'settings',
+      'settings/profile',
+      'settings/theme',
     ]) {
       expect(child(path)?.lazy, path).toBeTypeOf('function');
     }
@@ -82,8 +94,31 @@ describe('router', () => {
   it('[ONB-3] the signed-in app re-registers its push subscription on start (spec 10.5)', async () => {
     signedIn();
     renderAt('/today');
-    expect(await screen.findByRole('heading', { name: copy.today.title }, LAZY)).toBeDefined();
+    expect(await screen.findByRole('heading', { level: 1 }, LAZY)).toBeDefined();
     expect(refreshSubscription).toHaveBeenCalledOnce();
+  });
+
+  it('signed-in tabs sit in the shell with the bottom bar; setup does not (spec 5.1)', async () => {
+    signedIn();
+    renderAt('/settings');
+    expect(
+      await screen.findByRole('heading', { name: copy.settingsHome.title }, LAZY),
+    ).toBeDefined();
+    expect(screen.getByRole('navigation', { name: copy.nav.label })).toBeDefined();
+    cleanup();
+    signedIn();
+    renderAt('/setup/notifications');
+    expect(
+      await screen.findByRole('heading', { name: copy.notifications.title }, LAZY),
+    ).toBeDefined();
+    expect(screen.queryByRole('navigation', { name: copy.nav.label })).toBeNull();
+  });
+
+  it('/health opens the Health hub at Cycle', async () => {
+    signedIn();
+    const router = renderAt('/health');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/health/cycle'), LAZY);
+    expect(await screen.findByRole('heading', { name: copy.health.title }, LAZY)).toBeDefined();
   });
 
   it('the sign-in screen is open to a signed-out visitor', async () => {

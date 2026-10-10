@@ -11,11 +11,13 @@ import { hasReason, REASON, signOut } from '../../lib/auth/session';
 import { createPasskey, PasskeyCancelled } from '../../lib/auth/webauthn';
 import { formatDateTime } from '../../lib/dates';
 import { bindField } from '../../lib/forms/bindField';
+import { ME_KEY, type Me, useMe } from '../../lib/me/me';
 import { zodResolver } from '../../lib/forms/zodResolver';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { CodeList } from '../../ui/CodeList';
 import { Dialog } from '../../ui/Dialog';
+import { Select } from '../../ui/Select';
 import { EmptyState } from '../../ui/EmptyState';
 import { ErrorState } from '../../ui/ErrorState';
 import { Skeleton } from '../../ui/Skeleton';
@@ -35,7 +37,7 @@ const pinSchema = z
     path: ['repeat'],
   });
 
-type SectionKey = 'passkeys' | 'sessions' | 'pin' | 'codes';
+type SectionKey = 'passkeys' | 'sessions' | 'lock' | 'pin' | 'codes';
 
 /** The outcome of the last change, shown in the section where it happened. */
 interface Notice {
@@ -121,6 +123,7 @@ export function SecurityScreen() {
   // Every action in flight, so each button keeps its own busy state.
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
 
+  const me = useMe();
   const sessions = useQuery({
     queryKey: ['sessions'],
     queryFn: () => api.request('GET', '/api/v1/auth/sessions'),
@@ -214,6 +217,29 @@ export function SecurityScreen() {
       },
     }),
   );
+
+  // CR-025: how long the app can stay in the background before it locks (spec 11.6).
+  const lockAfter = me.data?.settings.app_lock_timeout_s;
+  const lockOptions = t.lockAfter.options.some((option) => option.seconds === lockAfter)
+    ? t.lockAfter.options
+    : lockAfter === undefined
+      ? t.lockAfter.options
+      : [...t.lockAfter.options, { seconds: lockAfter, label: t.lockAfter.custom(lockAfter / 60) }];
+  const lockState = me.isError ? 'error' : 'pending';
+  const saveLockAfter = (seconds: number) =>
+    change.mutate({
+      key: 'lock',
+      section: 'lock',
+      action: async () => {
+        await api.request('PUT', '/api/v1/auth/app-lock', { timeout_s: seconds });
+        queryClient.setQueryData<Me>(ME_KEY, (data) =>
+          data === undefined
+            ? data
+            : { ...data, settings: { ...data.settings, app_lock_timeout_s: seconds } },
+        );
+        return t.lockAfter.saved;
+      },
+    });
 
   const removePin = () =>
     change.mutate({
@@ -341,6 +367,28 @@ export function SecurityScreen() {
           </Stack>
         ) : (
           <ListState status={sessions.status} onRetry={() => void sessions.refetch()} />
+        )}
+      </Section>
+
+      <Section
+        title={t.lockAfter.title}
+        intro={t.lockAfter.intro}
+        notice={noticeFor('lock')}
+        onDismiss={dismiss}
+      >
+        {lockAfter === undefined ? (
+          <ListState status={lockState} onRetry={() => void me.refetch()} />
+        ) : (
+          <Select
+            name="lock-after"
+            label={t.lockAfter.label}
+            options={lockOptions.map((option) => ({
+              value: String(option.seconds),
+              label: option.label,
+            }))}
+            value={String(lockAfter)}
+            onChange={(value) => saveLockAfter(Number(value))}
+          />
         )}
       </Section>
 
