@@ -48,7 +48,7 @@ Spec version: 1 · Plan version: 1
 | ID | Task | Owns requirements | Depends on | Status | Commit | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | T26 | Cycle engine calendar-1.0 (pure) | CYC-2 | T20 | done | 51a3437 | TV1-TV12 passed, Hypothesis properties passed, 100% branch coverage of engine.py |
-| T27 | Rebuild job, predictions storage, nightly predict, health profile, exclusions, new-period confirm | CYC-1, CYC-7 | T26, T05 | todo | | |
+| T27 | Rebuild job, predictions storage, nightly predict, health profile, exclusions, new-period confirm | CYC-1, CYC-7 | T26, T05 | done | e01ba44 | 11 tests passing (rebuild, api, jobs); 94% coverage of app/health; make fmt-check lint types arch passed; trace passed |
 | T28 | Cycle screen: ring, prediction card, states, history, exclusions | CSC-1, CSC-2, CSC-4, CYC-3, CYC-4, CYC-5, CYC-6 | T27, T11 | todo | | |
 | T29 | Setup wizard and health mode settings | MOD-1, MOD-2, ONB-2, SET-4 | T27 | todo | | |
 | T30 | Reminder engine: model, horizon job, dispatcher, quiet hours, DST, retries, inbox API | REM-1, REM-2, REM-4, REM-6, REM-7 | T14, T27 | blocked |  | blocked: CR-007: truncated 9.2 cells (event scope, snooze presets) |
