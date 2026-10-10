@@ -38,7 +38,7 @@ Spec version: 1 · Plan version: 1
 | T20 | Period start/end endpoints and bleed-episode logic | PER-4, PER-5 | T18 | done | de44cca1224f | Pure-function bleed episode classification, auto-close, >10-day prompt, TV6/TV9/TV10 tests, /health/period/start and /health/period/end endpoints |
 | T21 | Calendar month endpoint | — | T20 | done | 9bdd11f0b551 | GET /health/calendar endpoint returning month view data with flow, logged-day dots, placeholders, and user timezone boundaries |
 | T22 | Check-in sheet UI: mood, energy, sleep, symptoms, flow, note, optional fields | CHK-1, CHK-3, CHK-4, PER-2 | T18, T19, T11 | done | 52c05ea | Playwright J3 journey passes in one sheet; unit & component tests pass; optional fields hidden until enabled; axe clean in both themes |
-| T23 | Offline layer: IndexedDB outbox, encrypted query cache, sync engine, sync chip | CHK-5, TOD-7 | T22 | todo | | |
+| T23 | Offline layer: IndexedDB outbox, encrypted query cache, sync engine, sync chip | CHK-5, TOD-7 | T22 | done | 2958541 | IndexedDB outbox with FIFO ordering, WebCrypto AES-GCM encrypted query cache persistence, sync engine with idempotency keys and automatic reconnect flush; Playwright J9 and 26 tagged unit tests passing |
 | T24 | Health calendar screen, day editing and period start/end controls | CSC-3, PER-1, PER-3 | T21, T23 | todo | | |
 | T25 | Today: check-in card and streak | TOD-3, TOD-5 | T22 | todo | | |
 | GATE-M2 | Milestone gate review (plan section 8) | — | all M2 tasks | todo | | |
