@@ -11,6 +11,53 @@ from app.platform.text import clean_text
 
 Mode = Literal["standard", "postpartum", "ttc", "avoid"]
 FlowLevel = Literal["none", "spotting", "light", "medium", "heavy"]
+Category = Literal["pain", "digestion", "skin", "emotional", "energy", "other"]
+
+
+class Symptom(BaseModel):
+    id: uuid.UUID
+    system_key: str | None = None
+    category: Category
+    name: str
+    sort_order: int = 0
+    archived: bool = False
+    archived_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+def _validate_symptom_name(v: str) -> str:
+    cleaned = clean_text(v)
+    if not cleaned:
+        raise ValueError("name must not be empty")
+    if len(cleaned) > 50:
+        raise ValueError("name must not exceed 50 characters")
+    return cleaned
+
+
+class SymptomCreateIn(BaseModel):
+    name: str
+    category: Category = "other"
+    sort_order: int = 0
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        return _validate_symptom_name(v)
+
+
+class SymptomUpdateIn(BaseModel):
+    name: str | None = None
+    category: Category | None = None
+    sort_order: int | None = None
+    archived: bool | None = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        return _validate_symptom_name(v)
 
 
 class SymptomPayload(Payload):

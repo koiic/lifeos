@@ -13,7 +13,7 @@ from app.auth.service import AccountService, AuthService
 from app.core import api as core_api
 from app.core.service import MeService
 from app.health import api as health_api
-from app.health.service import DailyLogService
+from app.health.service import DailyLogService, SymptomService
 from app.notify import api as notify_api
 from app.notify.service import NotifyService
 from app.platform import client_errors, probes
@@ -57,6 +57,7 @@ def create_app(settings: Settings) -> FastAPI:
         app.state.account = AccountService(app.state.auth, admin_engine)
         app.state.me = MeService(app.state.engine, keyring)
         app.state.health = DailyLogService(app.state.engine, keyring)
+        app.state.symptoms = SymptomService(app.state.engine, keyring)
         app.state.notify = NotifyService(
             app.state.engine, vapid, keyring, local=settings.env == "local"
         )

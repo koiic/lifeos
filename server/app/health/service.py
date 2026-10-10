@@ -13,8 +13,12 @@ from app.health.schemas import (
     DailyLogPutResponse,
     HealthProfilePayload,
     Mode,
+    Symptom,
+    SymptomCreateIn,
     SymptomPayload,
+    SymptomUpdateIn,
 )
+from app.platform.clock import utc_now
 from app.platform.crypto import (
     DataKey,
     Keyring,
@@ -75,6 +79,11 @@ class InvalidRange(HealthError):
 class DailyLogNotFound(HealthError):
     status = 404
     detail = "No daily log found for this date."
+
+
+class SymptomNotFound(HealthError):
+    status = 404
+    detail = "Symptom not found."
 
 
 class IdempotencyMismatch(HealthError):
@@ -392,3 +401,141 @@ class DailyLogService:
                     response_status=204,
                     response_body_enc=empty_enc,
                 )
+
+
+class SymptomService:
+    def __init__(self, engine: Database, keyring: Keyring) -> None:
+        self._db = engine
+        self._keyring = keyring
+
+    async def _user_dek(self, tx: Transaction, user_id: uuid.UUID) -> DataKey:
+        meta = await repo.user_meta(tx, user_id)
+        return unwrap_dek(self._keyring, meta.kek_version, meta.dek_wrapped, user_id)
+
+    async def list(self, user_id: uuid.UUID, include_archived: bool = False) -> list[Symptom]:
+        async with user_transaction(self._db, user_id) as tx:
+            dek = await self._user_dek(tx, user_id)
+            rows = await repo.list_symptoms(tx, user_id, include_archived=include_archived)
+            results = []
+            for r in rows:
+                associated = aad("symptoms", "payload_enc", r.id, user_id)
+                payload = decrypt_payload(dek, r.payload_enc, associated, SymptomPayload)
+                results.append(
+                    Symptom(
+                        id=r.id,
+                        system_key=r.system_key,
+                        category=r.category,  # type: ignore[arg-type]
+                        name=payload.name,
+                        sort_order=r.sort_order,
+                        archived=r.archived_at is not None,
+                        archived_at=r.archived_at,
+                        created_at=r.created_at,
+                        updated_at=r.updated_at,
+                    )
+                )
+            return results
+
+    async def get(self, user_id: uuid.UUID, symptom_id: uuid.UUID) -> Symptom:
+        async with user_transaction(self._db, user_id) as tx:
+            dek = await self._user_dek(tx, user_id)
+            r = await repo.get_symptom(tx, user_id, symptom_id)
+            if r is None:
+                raise SymptomNotFound()
+            associated = aad("symptoms", "payload_enc", r.id, user_id)
+            payload = decrypt_payload(dek, r.payload_enc, associated, SymptomPayload)
+            return Symptom(
+                id=r.id,
+                system_key=r.system_key,
+                category=r.category,  # type: ignore[arg-type]
+                name=payload.name,
+                sort_order=r.sort_order,
+                archived=r.archived_at is not None,
+                archived_at=r.archived_at,
+                created_at=r.created_at,
+                updated_at=r.updated_at,
+            )
+
+    async def create(self, user_id: uuid.UUID, data: SymptomCreateIn) -> Symptom:
+        symptom_id = new_id()
+        async with user_transaction(self._db, user_id) as tx:
+            dek = await self._user_dek(tx, user_id)
+            associated = aad("symptoms", "payload_enc", symptom_id, user_id)
+            payload_enc = encrypt_payload(dek, SymptomPayload(name=data.name), associated)
+            new_row = repo.NewSymptom(
+                id=symptom_id,
+                system_key=None,
+                category=data.category,
+                sort_order=data.sort_order,
+                payload_enc=payload_enc,
+            )
+            r = await repo.insert_symptom(tx, user_id, new_row)
+            return Symptom(
+                id=r.id,
+                system_key=r.system_key,
+                category=r.category,  # type: ignore[arg-type]
+                name=data.name,
+                sort_order=r.sort_order,
+                archived=r.archived_at is not None,
+                archived_at=r.archived_at,
+                created_at=r.created_at,
+                updated_at=r.updated_at,
+            )
+
+    async def update(
+        self, user_id: uuid.UUID, symptom_id: uuid.UUID, data: SymptomUpdateIn
+    ) -> Symptom:
+        async with user_transaction(self._db, user_id) as tx:
+            existing = await repo.get_symptom(tx, user_id, symptom_id)
+            if existing is None:
+                raise SymptomNotFound()
+
+            dek = await self._user_dek(tx, user_id)
+            payload_enc = None
+            name = None
+            if data.name is not None:
+                name = data.name
+                associated = aad("symptoms", "payload_enc", symptom_id, user_id)
+                payload_enc = encrypt_payload(dek, SymptomPayload(name=name), associated)
+            else:
+                associated = aad("symptoms", "payload_enc", symptom_id, user_id)
+                existing_payload = decrypt_payload(
+                    dek, existing.payload_enc, associated, SymptomPayload
+                )
+                name = existing_payload.name
+
+            archived_at = None
+            touch_archived = False
+            if data.archived is not None:
+                touch_archived = True
+                archived_at = (existing.archived_at or utc_now()) if data.archived else None
+
+            r = await repo.update_symptom(
+                tx,
+                user_id=user_id,
+                symptom_id=symptom_id,
+                category=data.category,
+                sort_order=data.sort_order,
+                payload_enc=payload_enc,
+                archived_at=archived_at,
+                touch_archived=touch_archived,
+            )
+            if r is None:
+                raise SymptomNotFound()
+
+            return Symptom(
+                id=r.id,
+                system_key=r.system_key,
+                category=r.category,  # type: ignore[arg-type]
+                name=name,
+                sort_order=r.sort_order,
+                archived=r.archived_at is not None,
+                archived_at=r.archived_at,
+                created_at=r.created_at,
+                updated_at=r.updated_at,
+            )
+
+    async def archive(self, user_id: uuid.UUID, symptom_id: uuid.UUID) -> None:
+        async with user_transaction(self._db, user_id) as tx:
+            found = await repo.archive_symptom(tx, user_id, symptom_id)
+            if not found:
+                raise SymptomNotFound()

@@ -3,6 +3,7 @@
 import uuid
 from dataclasses import dataclass
 from datetime import date, datetime
+from typing import Any
 
 from sqlalchemy import text
 
@@ -12,10 +13,29 @@ from app.platform.db import Transaction
 @dataclass(frozen=True)
 class NewSymptom:
     id: uuid.UUID
-    system_key: str
+    system_key: str | None
     category: str
     sort_order: int
     payload_enc: bytes
+
+
+@dataclass(frozen=True)
+class SymptomRow:
+    id: uuid.UUID
+    user_id: uuid.UUID
+    system_key: str | None
+    category: str
+    sort_order: int
+    payload_enc: bytes
+    archived_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+SYMPTOM_COLUMNS = (
+    "id, user_id, system_key, category, sort_order, payload_enc, "
+    "archived_at, created_at, updated_at"
+)
 
 
 @dataclass(frozen=True)
@@ -65,6 +85,181 @@ async def insert_symptoms(tx: Transaction, user_id: uuid.UUID, rows: list[NewSym
             for row in rows
         ],
     )
+
+
+async def get_symptom(
+    tx: Transaction, user_id: uuid.UUID, symptom_id: uuid.UUID
+) -> SymptomRow | None:
+    row = (
+        (
+            await tx.execute(
+                text(
+                    f"SELECT {SYMPTOM_COLUMNS} FROM symptoms WHERE user_id = :user_id AND id = :id"  # noqa: S608
+                ),
+                {"user_id": user_id, "id": symptom_id},
+            )
+        )
+        .mappings()
+        .first()
+    )
+    if row is None:
+        return None
+    return SymptomRow(
+        id=row["id"],
+        user_id=row["user_id"],
+        system_key=row["system_key"],
+        category=row["category"],
+        sort_order=row["sort_order"],
+        payload_enc=row["payload_enc"],
+        archived_at=row["archived_at"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+async def list_symptoms(
+    tx: Transaction, user_id: uuid.UUID, include_archived: bool = False
+) -> list[SymptomRow]:
+    condition = (
+        "WHERE user_id = :user_id"
+        if include_archived
+        else "WHERE user_id = :user_id AND archived_at IS NULL"
+    )
+    rows = (
+        (
+            await tx.execute(
+                text(
+                    f"SELECT {SYMPTOM_COLUMNS} FROM symptoms"  # noqa: S608
+                    f" {condition} ORDER BY sort_order ASC, created_at ASC"
+                ),
+                {"user_id": user_id},
+            )
+        )
+        .mappings()
+        .all()
+    )
+    return [
+        SymptomRow(
+            id=r["id"],
+            user_id=r["user_id"],
+            system_key=r["system_key"],
+            category=r["category"],
+            sort_order=r["sort_order"],
+            payload_enc=r["payload_enc"],
+            archived_at=r["archived_at"],
+            created_at=r["created_at"],
+            updated_at=r["updated_at"],
+        )
+        for r in rows
+    ]
+
+
+async def insert_symptom(tx: Transaction, user_id: uuid.UUID, row: NewSymptom) -> SymptomRow:
+    r = (
+        (
+            await tx.execute(
+                text(
+                    "INSERT INTO symptoms"  # noqa: S608
+                    " (id, user_id, system_key, category, sort_order, payload_enc)"
+                    " VALUES (:id, :user_id, :system_key, :category, :sort_order, :payload_enc)"
+                    f" RETURNING {SYMPTOM_COLUMNS}"
+                ),
+                {
+                    "id": row.id,
+                    "user_id": user_id,
+                    "system_key": row.system_key,
+                    "category": row.category,
+                    "sort_order": row.sort_order,
+                    "payload_enc": row.payload_enc,
+                },
+            )
+        )
+        .mappings()
+        .one()
+    )
+    return SymptomRow(
+        id=r["id"],
+        user_id=r["user_id"],
+        system_key=r["system_key"],
+        category=r["category"],
+        sort_order=r["sort_order"],
+        payload_enc=r["payload_enc"],
+        archived_at=r["archived_at"],
+        created_at=r["created_at"],
+        updated_at=r["updated_at"],
+    )
+
+
+async def update_symptom(
+    tx: Transaction,
+    user_id: uuid.UUID,
+    symptom_id: uuid.UUID,
+    category: str | None,
+    sort_order: int | None,
+    payload_enc: bytes | None,
+    archived_at: datetime | None,
+    touch_archived: bool,
+) -> SymptomRow | None:
+    set_clauses = ["updated_at = clock_timestamp()"]
+    params: dict[str, Any] = {"user_id": user_id, "id": symptom_id}
+
+    if category is not None:
+        set_clauses.append("category = :category")
+        params["category"] = category
+    if sort_order is not None:
+        set_clauses.append("sort_order = :sort_order")
+        params["sort_order"] = sort_order
+    if payload_enc is not None:
+        set_clauses.append("payload_enc = :payload_enc")
+        params["payload_enc"] = payload_enc
+    if touch_archived:
+        set_clauses.append("archived_at = :archived_at")
+        params["archived_at"] = archived_at
+
+    sets = ", ".join(set_clauses)
+    r = (
+        (
+            await tx.execute(
+                text(
+                    f"UPDATE symptoms SET {sets}"  # noqa: S608
+                    f" WHERE user_id = :user_id AND id = :id RETURNING {SYMPTOM_COLUMNS}"
+                ),
+                params,
+            )
+        )
+        .mappings()
+        .first()
+    )
+    if r is None:
+        return None
+    return SymptomRow(
+        id=r["id"],
+        user_id=r["user_id"],
+        system_key=r["system_key"],
+        category=r["category"],
+        sort_order=r["sort_order"],
+        payload_enc=r["payload_enc"],
+        archived_at=r["archived_at"],
+        created_at=r["created_at"],
+        updated_at=r["updated_at"],
+    )
+
+
+async def archive_symptom(tx: Transaction, user_id: uuid.UUID, symptom_id: uuid.UUID) -> bool:
+    res = await tx.execute(
+        text(
+            "UPDATE symptoms SET archived_at = clock_timestamp(), updated_at = clock_timestamp()"
+            " WHERE user_id = :user_id AND id = :id AND archived_at IS NULL"
+        ),
+        {"user_id": user_id, "id": symptom_id},
+    )
+    if res.rowcount > 0:
+        return True
+    existing = await tx.execute(
+        text("SELECT 1 FROM symptoms WHERE user_id = :user_id AND id = :id"),
+        {"user_id": user_id, "id": symptom_id},
+    )
+    return existing.first() is not None
 
 
 async def health_profile(tx: Transaction, user_id: uuid.UUID) -> bytes | None:
