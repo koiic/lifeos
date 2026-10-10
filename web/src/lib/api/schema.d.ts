@@ -535,6 +535,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/health/cycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cycle
+         * @description Current cycle, prediction, states (spec 8.5, 9.2, 9.3).
+         */
+        get: operations["get_cycle_api_v1_health_cycle_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health/cycles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cycles
+         * @description Cycle history with exclusion reasons (spec 9.2).
+         */
+        get: operations["get_cycles_api_v1_health_cycles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health/cycles/exclusions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set Cycle Exclusion
+         * @description Exclude/include a cycle (spec 9.2, CYC-5).
+         */
+        post: operations["set_cycle_exclusion_api_v1_health_cycles_exclusions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health/period-starts/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Period Start
+         * @description Answer 'Is this a new period?' for intra-cycle bleed (spec 8.1, 9.2).
+         */
+        post: operations["confirm_period_start_api_v1_health_period_starts_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health/period/end": {
         parameters: {
             query?: never;
@@ -569,6 +649,30 @@ export interface paths {
          * @description Tapping 'Period started' sets flow Medium on that date's log (PER-1).
          */
         post: operations["start_period_api_v1_health_period_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Health Profile
+         * @description Mode, usual lengths, hints (spec 9.2).
+         */
+        get: operations["get_health_profile_api_v1_health_profile_get"];
+        /**
+         * Update Health Profile
+         * @description Update profile: mode, usual lengths, hints. Mode change records mode_started_on (spec 9.2).
+         */
+        put: operations["update_health_profile_api_v1_health_profile_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -903,6 +1007,118 @@ export interface components {
             /** Suppressed Reason */
             suppressed_reason?: string | null;
         };
+        /** CycleExclusionIn */
+        CycleExclusionIn: {
+            /** Excluded */
+            excluded: boolean;
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+        };
+        /** CycleHistoryItem */
+        CycleHistoryItem: {
+            /** End Date */
+            end_date?: string | null;
+            /**
+             * Excluded
+             * @default false
+             */
+            excluded: boolean;
+            /** Exclusion Reason */
+            exclusion_reason?: string | null;
+            /** Is Complete */
+            is_complete: boolean;
+            /** Length Days */
+            length_days?: number | null;
+            /** Period Length Days */
+            period_length_days: number;
+            /**
+             * Postpartum
+             * @default false
+             */
+            postpartum: boolean;
+            /** Seq */
+            seq: number;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+        };
+        /** CycleNote */
+        CycleNote: {
+            /** Kind */
+            kind: string;
+            /** Text */
+            text?: string | null;
+        };
+        /** CyclePredictionResponse */
+        CyclePredictionResponse: {
+            /**
+             * Algorithm Version
+             * @default calendar-1.0
+             */
+            algorithm_version: string;
+            /**
+             * Confidence
+             * @default none
+             * @enum {string}
+             */
+            confidence: "high" | "medium" | "low" | "none";
+            /** Fertile End */
+            fertile_end?: string | null;
+            /** Fertile Start */
+            fertile_start?: string | null;
+            /** Mean Len */
+            mean_len?: number | null;
+            /** Mean Period Len */
+            mean_period_len?: number | null;
+            /**
+             * N Cycles
+             * @default 0
+             */
+            n_cycles: number;
+            /** Ovulation Est */
+            ovulation_est?: string | null;
+            /** Predicted Start */
+            predicted_start?: string | null;
+            /** Range High */
+            range_high?: string | null;
+            /** Range Low */
+            range_low?: string | null;
+            /** Sd Len */
+            sd_len?: number | null;
+            /** Suppressed Reason */
+            suppressed_reason?: string | null;
+        };
+        /** CycleStateResponse */
+        CycleStateResponse: {
+            /** Cycle Day */
+            cycle_day?: number | null;
+            /** Latest Start */
+            latest_start?: string | null;
+            /**
+             * Mode
+             * @default standard
+             * @enum {string}
+             */
+            mode: "standard" | "postpartum" | "ttc" | "avoid";
+            /** Notes */
+            notes?: components["schemas"]["CycleNote"][];
+            pending_prompt?: components["schemas"]["PendingPrompt"] | null;
+            /** Phase */
+            phase?: ("menstrual" | "follicular" | "fertile_window" | "luteal") | null;
+            prediction?: components["schemas"]["CyclePredictionResponse"] | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "on_period" | "upcoming" | "window" | "late" | "long_gap" | "irregular" | "waiting" | "no_data";
+        };
         /** DailyLog */
         DailyLog: {
             /** Bbt C */
@@ -1059,6 +1275,35 @@ export interface components {
             field: string;
             /** Message */
             message: string;
+        };
+        /** HealthProfileResponse */
+        HealthProfileResponse: {
+            /** Last Period Hint */
+            last_period_hint?: string | null;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "standard" | "postpartum" | "ttc" | "avoid";
+            /** Mode Started On */
+            mode_started_on?: string | null;
+            /** Usual Cycle Length */
+            usual_cycle_length?: number | null;
+            /** Usual Period Length */
+            usual_period_length?: number | null;
+        };
+        /** HealthProfileUpdateIn */
+        HealthProfileUpdateIn: {
+            /** Last Period Hint */
+            last_period_hint?: string | null;
+            /** Mode */
+            mode?: ("standard" | "postpartum" | "ttc" | "avoid") | null;
+            /** Mode Started On */
+            mode_started_on?: string | null;
+            /** Usual Cycle Length */
+            usual_cycle_length?: number | null;
+            /** Usual Period Length */
+            usual_period_length?: number | null;
         };
         /** IntimacyPayload */
         IntimacyPayload: {
@@ -1218,6 +1463,19 @@ export interface components {
             /** Totp */
             totp: string;
         };
+        /** PendingPrompt */
+        PendingPrompt: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "new_period" | "confirm_length";
+        };
         /** PeriodActionResponse */
         PeriodActionResponse: {
             /**
@@ -1243,6 +1501,16 @@ export interface components {
              * Format: date
              */
             date: string;
+        };
+        /** PeriodStartConfirmIn */
+        PeriodStartConfirmIn: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Is New Period */
+            is_new_period: boolean;
         };
         /** PeriodStartIn */
         PeriodStartIn: {
@@ -3634,6 +3902,256 @@ export interface operations {
             };
         };
     };
+    get_cycle_api_v1_health_cycle_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleStateResponse"];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation failure. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    get_cycles_api_v1_health_cycles_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleHistoryItem"][];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation failure. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    set_cycle_exclusion_api_v1_health_cycles_exclusions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CycleExclusionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated. Or: Missing X-LifeOS-Client header or wrong Origin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request body is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation failure. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    confirm_period_start_api_v1_health_period_starts_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PeriodStartConfirmIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated. Or: Missing X-LifeOS-Client header or wrong Origin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request body is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation failure. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     end_period_api_v1_health_period_end_post: {
         parameters: {
             query?: never;
@@ -3723,6 +4241,131 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PeriodActionResponse"];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated. Or: Missing X-LifeOS-Client header or wrong Origin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request body is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation failure. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    get_health_profile_api_v1_health_profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthProfileResponse"];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation failure. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    update_health_profile_api_v1_health_profile_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HealthProfileUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthProfileResponse"];
                 };
             };
             /** @description Not signed in, or the session has ended. */

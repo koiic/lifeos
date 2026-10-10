@@ -2,8 +2,10 @@
 
 import procrastinate
 
+from app.health import jobs as health_jobs
 from app.platform import outbox
 from app.platform.config import Settings, load_settings
+from app.platform.crypto import load_keyring
 from app.platform.jobs import Runtime, create_runtime, new_job_app, register_maintenance
 from app.platform.logging import configure_logging
 
@@ -13,6 +15,8 @@ def create_job_app(settings: Settings, runtime: Runtime) -> procrastinate.App:
     app = new_job_app(settings)
     outbox.register(app, runtime)
     register_maintenance(app)
+    keyring = load_keyring(settings)
+    health_jobs.register(app, runtime, keyring)
     return app
 
 

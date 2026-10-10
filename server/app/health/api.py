@@ -15,11 +15,17 @@ from app.auth.api import no_store, require_session
 from app.auth.service import SessionContext
 from app.health.schemas import (
     CalendarMonthResponse,
+    CycleExclusionIn,
+    CycleHistoryItem,
+    CycleStateResponse,
     DailyLog,
     DailyLogPutIn,
     DailyLogPutResponse,
+    HealthProfileResponse,
+    HealthProfileUpdateIn,
     PeriodActionResponse,
     PeriodEndIn,
+    PeriodStartConfirmIn,
     PeriodStartIn,
     Symptom,
     SymptomCreateIn,
@@ -311,7 +317,106 @@ async def end_period(
 # Calendar Month Endpoint (CSC-3, spec 9.2)
 # ---------------------------------------------------------------------------
 
-health_router = APIRouter(prefix="/api/v1/health", tags=["health-calendar"])
+health_router = APIRouter(prefix="/api/v1/health", tags=["health"])
+
+
+@health_router.get(
+    "/profile",
+    responses=SIGNED_IN | {422: {"description": "Validation failure."}},
+    response_model=HealthProfileResponse,
+)
+async def get_health_profile(
+    session: SignedIn,
+    service: DailyLogs,
+) -> HealthProfileResponse | JSONResponse:
+    """Mode, usual lengths, hints (spec 9.2)."""
+    try:
+        return await service.get_health_profile(session.user_id)
+    except HealthError as err:
+        return error_response(err)
+
+
+@health_router.put(
+    "/profile",
+    responses=SIGNED_IN | {422: {"description": "Validation failure."}},
+    response_model=HealthProfileResponse,
+)
+async def update_health_profile(
+    body: HealthProfileUpdateIn,
+    session: SignedIn,
+    service: DailyLogs,
+) -> HealthProfileResponse | JSONResponse:
+    """Update profile: mode, usual lengths, hints. Mode change records mode_started_on."""
+    try:
+        return await service.update_health_profile(session.user_id, body)
+    except HealthError as err:
+        return error_response(err)
+
+
+@health_router.get(
+    "/cycle",
+    responses=SIGNED_IN | {422: {"description": "Validation failure."}},
+    response_model=CycleStateResponse,
+)
+async def get_cycle(
+    session: SignedIn,
+    service: DailyLogs,
+) -> CycleStateResponse | JSONResponse:
+    """Current cycle, prediction, states (spec 8.5, 9.2, 9.3)."""
+    try:
+        return await service.get_cycle_state(session.user_id)
+    except HealthError as err:
+        return error_response(err)
+
+
+@health_router.get(
+    "/cycles",
+    responses=SIGNED_IN | {422: {"description": "Validation failure."}},
+    response_model=list[CycleHistoryItem],
+)
+async def get_cycles(
+    session: SignedIn,
+    service: DailyLogs,
+) -> list[CycleHistoryItem] | JSONResponse:
+    """Cycle history with exclusion reasons (spec 9.2)."""
+    try:
+        return await service.get_cycles_history(session.user_id)
+    except HealthError as err:
+        return error_response(err)
+
+
+@health_router.post(
+    "/cycles/exclusions",
+    responses=SIGNED_IN | {422: {"description": "Validation failure."}},
+)
+async def set_cycle_exclusion(
+    body: CycleExclusionIn,
+    session: SignedIn,
+    service: DailyLogs,
+) -> Any:
+    """Exclude/include a cycle (spec 9.2, CYC-5)."""
+    try:
+        return await service.set_cycle_exclusion(
+            session.user_id, body.start_date, body.excluded, body.reason
+        )
+    except HealthError as err:
+        return error_response(err)
+
+
+@health_router.post(
+    "/period-starts/confirm",
+    responses=SIGNED_IN | {422: {"description": "Validation failure."}},
+)
+async def confirm_period_start(
+    body: PeriodStartConfirmIn,
+    session: SignedIn,
+    service: DailyLogs,
+) -> Any:
+    """Answer 'Is this a new period?' for intra-cycle bleed (spec 8.1, 9.2)."""
+    try:
+        return await service.confirm_period_start(session.user_id, body.date, body.is_new_period)
+    except HealthError as err:
+        return error_response(err)
 
 
 @health_router.get(

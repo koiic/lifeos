@@ -67,10 +67,16 @@ class SymptomPayload(Payload):
 
 
 class HealthProfilePayload(Payload):
-    """`health_profile.payload_enc` (7.2); only the mode is read here (the health-profile task
-    owns the rest)."""
+    """`health_profile.payload_enc` (7.2)."""
 
     mode: Mode = "standard"
+    mode_started_on: date | None = None
+    usual_cycle_length: int | None = None
+    usual_period_length: int | None = None
+    last_period_hint: date | None = None
+    excluded_cycle_starts: list[date] = Field(default_factory=list)
+    exclusion_reasons: dict[str, str] = Field(default_factory=dict)
+    forced_period_starts: list[date] = Field(default_factory=list)
 
 
 class IntimacyPayload(BaseModel):
@@ -246,3 +252,129 @@ class TodayResponse(BaseModel):
     streak: int
     items: list[TodayItem] = Field(default_factory=list)
     unread_inbox: int = 0
+
+
+# ---------------------------------------------------------------------------
+# Cycle, Profile & Prediction Schemas (spec 9.2, 9.3, CYC-1, CYC-5, CYC-7)
+# ---------------------------------------------------------------------------
+
+
+class HealthProfileResponse(BaseModel):
+    mode: Mode
+    mode_started_on: date | None = None
+    usual_cycle_length: int | None = None
+    usual_period_length: int | None = None
+    last_period_hint: date | None = None
+
+
+class HealthProfileUpdateIn(BaseModel):
+    mode: Mode | None = None
+    mode_started_on: date | None = None
+    usual_cycle_length: int | None = Field(default=None, ge=15, le=60)
+    usual_period_length: int | None = Field(default=None, ge=1, le=15)
+    last_period_hint: date | None = None
+
+
+class CyclePayload(Payload):
+    """`cycles.payload_enc` (7.2)."""
+
+    start_date: date
+    end_date: date | None = None
+    length_days: int | None = None
+    period_length_days: int
+    is_complete: bool
+    excluded: bool = False
+    exclusion_reason: str | None = None
+    postpartum: bool = False
+
+
+class CycleHistoryItem(BaseModel):
+    seq: int
+    start_date: date
+    end_date: date | None = None
+    length_days: int | None = None
+    period_length_days: int
+    is_complete: bool
+    excluded: bool = False
+    exclusion_reason: str | None = None
+    postpartum: bool = False
+
+
+Confidence = Literal["high", "medium", "low", "none"]
+Phase = Literal["menstrual", "follicular", "fertile_window", "luteal"]
+DerivedStateKind = Literal[
+    "on_period",
+    "upcoming",
+    "window",
+    "late",
+    "long_gap",
+    "irregular",
+    "waiting",
+    "no_data",
+]
+
+
+class CyclePredictionPayload(Payload):
+    """`cycle_predictions.payload_enc` (7.2)."""
+
+    for_cycle_start: date | None = None
+    predicted_start: date | None = None
+    range_low: date | None = None
+    range_high: date | None = None
+    ovulation_est: date | None = None
+    fertile_start: date | None = None
+    fertile_end: date | None = None
+    confidence: Confidence = "none"
+    n_cycles: int = 0
+    mean_len: float | None = None
+    sd_len: float | None = None
+    mean_period_len: int | None = None
+    suppressed_reason: str | None = None
+
+
+class CyclePredictionResponse(BaseModel):
+    predicted_start: date | None = None
+    range_low: date | None = None
+    range_high: date | None = None
+    ovulation_est: date | None = None
+    fertile_start: date | None = None
+    fertile_end: date | None = None
+    confidence: Confidence = "none"
+    n_cycles: int = 0
+    mean_len: float | None = None
+    sd_len: float | None = None
+    mean_period_len: int | None = None
+    algorithm_version: str = "calendar-1.0"
+    suppressed_reason: str | None = None
+
+
+class PendingPrompt(BaseModel):
+    kind: Literal["new_period", "confirm_length"]
+    date: date
+
+
+class CycleNote(BaseModel):
+    kind: str
+    text: str | None = None
+
+
+class CycleStateResponse(BaseModel):
+    cycle_day: int | None = None
+    latest_start: date | None = None
+    phase: Phase | None = None
+    state: DerivedStateKind
+    prediction: CyclePredictionResponse | None = None
+    notes: list[CycleNote] = Field(default_factory=list)
+    pending_prompt: PendingPrompt | None = None
+    mode: Mode = "standard"
+
+
+class CycleExclusionIn(BaseModel):
+    start_date: date
+    excluded: bool
+    reason: str | None = None
+
+
+class PeriodStartConfirmIn(BaseModel):
+    date: date
+    is_new_period: bool

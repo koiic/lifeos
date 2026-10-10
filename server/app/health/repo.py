@@ -519,3 +519,259 @@ async def get_logged_dates(
         .all()
     )
     return set(rows)
+
+
+# ---------------------------------------------------------------------------
+# Health Profile, Cycles & Predictions Repository (spec 7.2, 8.5)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class HealthProfileRow:
+    user_id: uuid.UUID
+    payload_enc: bytes
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
+class CycleRow:
+    id: uuid.UUID
+    user_id: uuid.UUID
+    seq: int
+    payload_enc: bytes
+    computed_at: datetime
+
+
+@dataclass(frozen=True)
+class CyclePredictionRow:
+    id: uuid.UUID
+    user_id: uuid.UUID
+    algorithm_version: str
+    payload_enc: bytes
+    created_at: datetime
+    superseded_at: datetime | None
+
+
+@dataclass(frozen=True)
+class NewCycleRow:
+    id: uuid.UUID
+    seq: int
+    payload_enc: bytes
+
+
+async def get_health_profile(tx: Transaction, user_id: uuid.UUID) -> HealthProfileRow | None:
+    row = (
+        (
+            await tx.execute(
+                text(
+                    "SELECT user_id, payload_enc, updated_at"
+                    " FROM health_profile WHERE user_id = :user_id"
+                ),
+                {"user_id": user_id},
+            )
+        )
+        .mappings()
+        .one_or_none()
+    )
+    if row is None:
+        return None
+    return HealthProfileRow(
+        user_id=row["user_id"],
+        payload_enc=bytes(row["payload_enc"]),
+        updated_at=row["updated_at"],
+    )
+
+
+async def upsert_health_profile(
+    tx: Transaction, user_id: uuid.UUID, payload_enc: bytes
+) -> HealthProfileRow:
+    sql = (
+        "INSERT INTO health_profile (user_id, payload_enc, updated_at)"
+        " VALUES (:user_id, :payload_enc, now())"
+        " ON CONFLICT (user_id) DO UPDATE"
+        " SET payload_enc = :payload_enc, updated_at = now()"
+        " RETURNING user_id, payload_enc, updated_at"
+    )
+    row = (
+        (
+            await tx.execute(
+                text(sql),
+                {"user_id": user_id, "payload_enc": payload_enc},
+            )
+        )
+        .mappings()
+        .one()
+    )
+    return HealthProfileRow(
+        user_id=row["user_id"],
+        payload_enc=bytes(row["payload_enc"]),
+        updated_at=row["updated_at"],
+    )
+
+
+async def get_cycles(tx: Transaction, user_id: uuid.UUID) -> list[CycleRow]:
+    rows = (
+        (
+            await tx.execute(
+                text(
+                    "SELECT id, user_id, seq, payload_enc, computed_at"
+                    " FROM cycles WHERE user_id = :user_id ORDER BY seq ASC"
+                ),
+                {"user_id": user_id},
+            )
+        )
+        .mappings()
+        .all()
+    )
+    return [
+        CycleRow(
+            id=r["id"],
+            user_id=r["user_id"],
+            seq=r["seq"],
+            payload_enc=bytes(r["payload_enc"]),
+            computed_at=r["computed_at"],
+        )
+        for r in rows
+    ]
+
+
+async def replace_cycles(tx: Transaction, user_id: uuid.UUID, cycles: list[NewCycleRow]) -> None:
+    await tx.execute(
+        text("DELETE FROM cycles WHERE user_id = :user_id"),
+        {"user_id": user_id},
+    )
+    if not cycles:
+        return
+
+    sql = (
+        "INSERT INTO cycles (id, user_id, seq, payload_enc, computed_at)"
+        " VALUES (:id, :user_id, :seq, :payload_enc, now())"
+    )
+    await tx.execute(
+        text(sql),
+        [
+            {
+                "id": c.id,
+                "user_id": user_id,
+                "seq": c.seq,
+                "payload_enc": c.payload_enc,
+            }
+            for c in cycles
+        ],
+    )
+
+
+async def get_latest_prediction(tx: Transaction, user_id: uuid.UUID) -> CyclePredictionRow | None:
+    row = (
+        (
+            await tx.execute(
+                text(
+                    "SELECT id, user_id, algorithm_version, payload_enc, created_at, superseded_at"
+                    " FROM cycle_predictions WHERE user_id = :user_id AND superseded_at IS NULL"
+                    " ORDER BY created_at DESC LIMIT 1"
+                ),
+                {"user_id": user_id},
+            )
+        )
+        .mappings()
+        .one_or_none()
+    )
+    if row is None:
+        return None
+    return CyclePredictionRow(
+        id=row["id"],
+        user_id=row["user_id"],
+        algorithm_version=row["algorithm_version"],
+        payload_enc=bytes(row["payload_enc"]),
+        created_at=row["created_at"],
+        superseded_at=row["superseded_at"],
+    )
+
+
+async def supersede_active_predictions(
+    tx: Transaction, user_id: uuid.UUID, superseded_at: datetime
+) -> int:
+    result = await tx.execute(
+        text(
+            "UPDATE cycle_predictions SET superseded_at = :superseded_at"
+            " WHERE user_id = :user_id AND superseded_at IS NULL"
+        ),
+        {"user_id": user_id, "superseded_at": superseded_at},
+    )
+    return int(result.rowcount)
+
+
+async def insert_prediction(
+    tx: Transaction,
+    *,
+    pred_id: uuid.UUID,
+    user_id: uuid.UUID,
+    algorithm_version: str,
+    payload_enc: bytes,
+    created_at: datetime,
+) -> CyclePredictionRow:
+    sql = (
+        "INSERT INTO cycle_predictions (id, user_id, algorithm_version, payload_enc, created_at)"
+        " VALUES (:id, :user_id, :algorithm_version, :payload_enc, :created_at)"
+        " RETURNING id, user_id, algorithm_version, payload_enc, created_at, superseded_at"
+    )
+    row = (
+        (
+            await tx.execute(
+                text(sql),
+                {
+                    "id": pred_id,
+                    "user_id": user_id,
+                    "algorithm_version": algorithm_version,
+                    "payload_enc": payload_enc,
+                    "created_at": created_at,
+                },
+            )
+        )
+        .mappings()
+        .one()
+    )
+    return CyclePredictionRow(
+        id=row["id"],
+        user_id=row["user_id"],
+        algorithm_version=row["algorithm_version"],
+        payload_enc=bytes(row["payload_enc"]),
+        created_at=row["created_at"],
+        superseded_at=row["superseded_at"],
+    )
+
+
+async def get_all_daily_logs_for_rebuild(tx: Transaction, user_id: uuid.UUID) -> list[DailyLogRow]:
+    sql = (
+        f"SELECT {LOG_COLUMNS} FROM daily_logs"  # noqa: S608
+        " WHERE user_id = :user_id ORDER BY date ASC"
+    )
+    rows = (
+        (
+            await tx.execute(
+                text(sql),
+                {"user_id": user_id},
+            )
+        )
+        .mappings()
+        .all()
+    )
+    return [
+        DailyLogRow(
+            id=r["id"],
+            user_id=r["user_id"],
+            date=r["date"],
+            payload_enc=bytes(r["payload_enc"]),
+            import_id=r["import_id"],
+            client_updated_at=r["client_updated_at"],
+            created_at=r["created_at"],
+            updated_at=r["updated_at"],
+        )
+        for r in rows
+    ]
+
+
+async def get_all_users_for_nightly_predict(tx: Transaction) -> list[uuid.UUID]:
+    sql = "SELECT id FROM users WHERE deleted_at IS NULL"
+    rows = (await tx.execute(text(sql))).scalars().all()
+    return list(rows)
