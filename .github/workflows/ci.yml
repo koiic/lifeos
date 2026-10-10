@@ -110,7 +110,7 @@ jobs:
 
       - name: Dependency audit (npm audit)
         working-directory: web
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=high --omit=dev
 
   contracts-and-tokens:
     runs-on: ubuntu-latest

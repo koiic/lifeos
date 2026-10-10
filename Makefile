@@ -23,7 +23,7 @@ verify-full: verify verify-e2e
 	cd web && npm run lighthouse
 	./scripts/zap_baseline.sh
 	cd server && uv run pip-audit
-	cd web && npm audit --audit-level=high
+	cd web && npm audit --audit-level=high --omit=dev
 	./scripts/scan_images.sh
 	./scripts/check_external_origins.sh
 

@@ -27,7 +27,7 @@ Spec version: 1 · Plan version: 1
 | T15 | Infrastructure: VPS, Docker Compose, Cloudflare Pages, Pages Function proxy, Tunnel, Access, secrets | — | T02, T13 | done | 8eb0f8c | Pages Function proxy, spec 12.4 headers, Dockerfile, Compose (CR-015), runbooks; 448 web tests, 650 server tests |
 | T16 | CI/CD: pipelines, staging deploy, production approval, scans, external-origin check | NFR-6 | T15 | done | 93e2323 | CI & deploy pipelines, check_external_origins.sh, scan_images.sh; NFR-6; 452 web tests, 653 server tests |
 | T17 | App shell: bottom navigation, Today greeting, profile and theme settings | SET-1, SET-2, TOD-1 | T12 | done | f90f9ad | App shell, tabs, Today greeting, profile & theme settings; 442 web tests passed, size-limit 13.2 kB; SET-1, SET-2, TOD-1; CR-025, CR-029, CR-030 |
-| GATE-M1 | Milestone gate review (plan section 8) | — | all M1 tasks | todo | | |
+| GATE-M1 | Milestone gate review (plan section 8) | — | all M1 tasks | awaiting-signoff |  | report: docs/plan/gates/M1.md |
 
 ## M2 Logging (weeks 3–4)
 
