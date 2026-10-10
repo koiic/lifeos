@@ -1,0 +1,181 @@
+# Production and staging Docker Compose deployment (spec 14.2, CR-006, CR-015).
+# All services run on an internal network; only cloudflared communicates with Cloudflare Tunnel.
+# No host ports are published (CR-015 network trust).
+
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:2024.12.0
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN_FILE: /run/secrets/tunnel_token
+    secrets:
+      - tunnel_token
+    networks:
+      - internal
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    environment:
+      ENV: ${ENV:-production}
+      APP_ORIGIN: ${APP_ORIGIN}
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID}
+    secrets:
+      - lifeos_kek
+      - database_url
+      - database_admin_write_url
+      - ip_hmac_key
+      - vapid_public_key
+      - vapid_private_key
+      - vapid_subject
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/readyz')\" || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    command: ["python", "-m", "procrastinate", "worker"]
+    environment:
+      ENV: ${ENV:-production}
+      APP_ORIGIN: ${APP_ORIGIN}
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID}
+    secrets:
+      - lifeos_kek
+      - database_jobs_url
+      - database_url
+      - ip_hmac_key
+      - vapid_public_key
+      - vapid_private_key
+      - vapid_subject
+    networks:
+      - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  migrate:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      ENV: ${ENV:-production}
+      APP_ORIGIN: ${APP_ORIGIN}
+    secrets:
+      - database_owner_url
+      - database_url
+    networks:
+      - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lifeos
+      POSTGRES_USER_FILE: /run/secrets/postgres_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    command: >
+      postgres
+      -c archive_mode=on
+      -c archive_command='test ! -f /var/lib/postgresql/archive/%f && cp %p /var/lib/postgresql/archive/%f'
+      -c wal_level=replica
+      -c max_wal_senders=3
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - pgarchive:/var/lib/postgresql/archive
+    secrets:
+      - postgres_user
+      - postgres_password
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lifeos_owner -d lifeos || pg_isready"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backup:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          sleep 86400
+        done
+    volumes:
+      - pgarchive:/var/lib/postgresql/archive:ro
+      - pgbackup:/var/backups/postgresql
+    secrets:
+      - database_owner_url
+    networks:
+      - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  pgarchive:
+  pgbackup:
+
+networks:
+  internal:
+    driver: bridge
+
+secrets:
+  tunnel_token:
+    file: ../secrets/tunnel_token
+  lifeos_kek:
+    file: ../secrets/lifeos_kek
+  database_url:
+    file: ../secrets/database_url
+  database_owner_url:
+    file: ../secrets/database_owner_url
+  database_jobs_url:
+    file: ../secrets/database_jobs_url
+  database_admin_write_url:
+    file: ../secrets/database_admin_write_url
+  ip_hmac_key:
+    file: ../secrets/ip_hmac_key
+  vapid_public_key:
+    file: ../secrets/vapid_public_key
+  vapid_private_key:
+    file: ../secrets/vapid_private_key
+  vapid_subject:
+    file: ../secrets/vapid_subject
+  postgres_user:
+    file: ../secrets/postgres_user
+  postgres_password:
+    file: ../secrets/postgres_password
