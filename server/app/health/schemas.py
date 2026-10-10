@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import date, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -201,3 +201,18 @@ class PeriodActionResponse(BaseModel):
     date: date
     flow: FlowLevel
     rebuild: Literal["queued", "not_needed"]
+
+
+class CalendarDay(BaseModel):
+    date: date
+    flow: FlowLevel | None = None
+    predicted: bool = False
+    fertile: bool = False
+    has_log: bool = False
+    events: list[dict[str, Any]] = Field(default_factory=list)
+    doses: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class CalendarMonthResponse(BaseModel):
+    month: str
+    days: list[CalendarDay]

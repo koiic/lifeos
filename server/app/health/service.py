@@ -1,5 +1,6 @@
 """health: Service layer: rules and transactions (plan 4.2)."""
 
+import calendar
 import hashlib
 import uuid
 from datetime import date, datetime, timedelta
@@ -8,6 +9,8 @@ from zoneinfo import ZoneInfo
 
 from app.health import repo
 from app.health.schemas import (
+    CalendarDay,
+    CalendarMonthResponse,
     DailyLog,
     DailyLogPayload,
     DailyLogPutIn,
@@ -92,6 +95,25 @@ class SymptomNotFound(HealthError):
 class IdempotencyMismatch(HealthError):
     status = 422
     detail = "Idempotency key was previously used with a different request body."
+
+
+class InvalidMonthError(HealthError):
+    status = 422
+    detail = "Month must be in YYYY-MM format between 1990 and 2100."
+
+
+def parse_and_validate_month(month_str: str) -> tuple[int, int]:
+    try:
+        parts = month_str.split("-")
+        if len(parts) != 2:
+            raise ValueError
+        year = int(parts[0])
+        month = int(parts[1])
+        if not (1990 <= year <= 2100 and 1 <= month <= 12):
+            raise ValueError
+        return year, month
+    except Exception as err:
+        raise InvalidMonthError from err
 
 
 def validate_log_date(log_date: date, user_timezone: str) -> None:
@@ -549,6 +571,63 @@ class DailyLogService:
                     )
 
             return PeriodActionResponse(date=last_flow_date, flow=final_flow, rebuild=rebuild)
+
+    async def get_calendar_month(
+        self,
+        user_id: uuid.UUID,
+        month_str: str | None = None,
+    ) -> CalendarMonthResponse:
+        async with user_transaction(self._db, user_id) as tx:
+            dek, tz = await self._user_dek_and_tz(tx, user_id)
+
+            if month_str is None:
+                local_now = datetime.now(ZoneInfo(tz))
+                year = local_now.year
+                month = local_now.month
+                month_str = f"{year:04d}-{month:02d}"
+            else:
+                year, month = parse_and_validate_month(month_str)
+
+            _, num_days = calendar.monthrange(year, month)
+            start_date = date(year, month, 1)
+            end_date = date(year, month, num_days)
+
+            logs = await repo.get_daily_logs_range(tx, user_id, start_date, end_date)
+            flow_by_date: dict[date, FlowLevel] = {}
+            for row in logs:
+                associated = aad("daily_logs", "payload_enc", row.id, user_id)
+                payload = decrypt_payload(dek, row.payload_enc, associated, DailyLogPayload)
+                flow_by_date[row.date] = payload.flow
+
+            days: list[CalendarDay] = []
+            for day_num in range(1, num_days + 1):
+                d = date(year, month, day_num)
+                if d in flow_by_date:
+                    days.append(
+                        CalendarDay(
+                            date=d,
+                            flow=flow_by_date[d],
+                            predicted=False,
+                            fertile=False,
+                            has_log=True,
+                            events=[],
+                            doses=[],
+                        )
+                    )
+                else:
+                    days.append(
+                        CalendarDay(
+                            date=d,
+                            flow=None,
+                            predicted=False,
+                            fertile=False,
+                            has_log=False,
+                            events=[],
+                            doses=[],
+                        )
+                    )
+
+            return CalendarMonthResponse(month=month_str, days=days)
 
 
 class SymptomService:

@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from app.auth.api import no_store, require_session
 from app.auth.service import SessionContext
 from app.health.schemas import (
+    CalendarMonthResponse,
     DailyLog,
     DailyLogPutIn,
     DailyLogPutResponse,
@@ -305,6 +306,37 @@ async def end_period(
         return error_response(err)
 
 
+# ---------------------------------------------------------------------------
+# Calendar Month Endpoint (CSC-3, spec 9.2)
+# ---------------------------------------------------------------------------
+
+health_router = APIRouter(prefix="/api/v1/health", tags=["health-calendar"])
+
+
+@health_router.get(
+    "/calendar",
+    responses=SIGNED_IN | {422: {"description": "Validation failure."}},
+    response_model=CalendarMonthResponse,
+)
+async def get_calendar_month(
+    session: SignedIn,
+    service: DailyLogs,
+    month: Annotated[
+        str | None,
+        Query(
+            pattern=r"^\d{4}-(0[1-9]|1[0-2])$",
+            description="Month in YYYY-MM format (defaults to current month in user's timezone)",
+        ),
+    ] = None,
+) -> CalendarMonthResponse | JSONResponse:
+    """Month view data (CSC-3, spec 9.2)."""
+    try:
+        return await service.get_calendar_month(session.user_id, month)
+    except HealthError as err:
+        return error_response(err)
+
+
 router.include_router(daily_logs_router)
 router.include_router(symptoms_router)
 router.include_router(period_router)
+router.include_router(health_router)

@@ -34,6 +34,90 @@
         "title": "AppLockSettings",
         "type": "object"
       },
+      "CalendarDay": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "doses": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Doses",
+            "type": "array"
+          },
+          "events": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "fertile": {
+            "default": false,
+            "title": "Fertile",
+            "type": "boolean"
+          },
+          "flow": {
+            "anyOf": [
+              {
+                "enum": [
+                  "none",
+                  "spotting",
+                  "light",
+                  "medium",
+                  "heavy"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flow"
+          },
+          "has_log": {
+            "default": false,
+            "title": "Has Log",
+            "type": "boolean"
+          },
+          "predicted": {
+            "default": false,
+            "title": "Predicted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "date"
+        ],
+        "title": "CalendarDay",
+        "type": "object"
+      },
+      "CalendarMonthResponse": {
+        "properties": {
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/CalendarDay"
+            },
+            "title": "Days",
+            "type": "array"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "days"
+        ],
+        "title": "CalendarMonthResponse",
+        "type": "object"
+      },
       "Consent": {
         "properties": {
           "current_version": {
@@ -4425,6 +4509,89 @@
         "summary": "Upsert Daily Log",
         "tags": [
           "daily-logs"
+        ]
+      }
+    },
+    "/api/v1/health/calendar": {
+      "get": {
+        "description": "Month view data (CSC-3, spec 9.2).",
+        "operationId": "get_calendar_month_api_v1_health_calendar_get",
+        "parameters": [
+          {
+            "description": "Month in YYYY-MM format (defaults to current month in user's timezone)",
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Month in YYYY-MM format (defaults to current month in user's timezone)",
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarMonthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in, or the session has ended."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Account not activated."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Validation failure."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "More than 300 requests in a minute on this session (9.1)."
+          }
+        },
+        "summary": "Get Calendar Month",
+        "tags": [
+          "health-calendar"
         ]
       }
     },

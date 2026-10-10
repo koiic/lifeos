@@ -164,6 +164,44 @@ async def test_period_end_confirms_last_flow_day(env: AuthEnv) -> None:
     assert log3.json()["flow"] == "medium"
 
 
+@pytest.mark.req("PER-1", "PER-4")
+async def test_period_end_creates_log_when_none_exists(env: AuthEnv) -> None:
+    await register_user(env)
+    resp = env.client.post(
+        PERIOD_END,
+        json={"date": "2026-10-06"},
+        headers={"CF-Connecting-IP": env.ip, **HEADERS},
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["date"] == "2026-10-06"
+    assert data["flow"] == "medium"
+    assert data["rebuild"] == "queued"
+
+
+@pytest.mark.req("PER-1", "PER-4")
+async def test_period_end_updates_none_flow_to_medium(env: AuthEnv) -> None:
+    await register_user(env)
+    # Log mood only (flow defaults to "none")
+    env.client.put(
+        f"{DAILY_LOGS}/2026-10-06",
+        json={
+            "mood": 3,
+            "flow": "none",
+            "client_updated_at": datetime(2026, 10, 6, 12, 0, tzinfo=UTC).isoformat(),
+        },
+        headers={"CF-Connecting-IP": env.ip, **HEADERS},
+    )
+    resp = env.client.post(
+        PERIOD_END,
+        json={"date": "2026-10-06"},
+        headers={"CF-Connecting-IP": env.ip, **HEADERS},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["flow"] == "medium"
+    assert resp.json()["rebuild"] == "queued"
+
+
 @pytest.mark.req("PER-1")
 async def test_period_endpoints_require_auth(env: AuthEnv) -> None:
     # 401 without session

@@ -515,6 +515,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/health/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Calendar Month
+         * @description Month view data (CSC-3, spec 9.2).
+         */
+        get: operations["get_calendar_month_api_v1_health_calendar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health/period/end": {
         parameters: {
             query?: never;
@@ -787,6 +807,46 @@ export interface components {
             pin?: string | null;
             /** Timeout S */
             timeout_s?: number | null;
+        };
+        /** CalendarDay */
+        CalendarDay: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Doses */
+            doses?: {
+                [key: string]: unknown;
+            }[];
+            /** Events */
+            events?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Fertile
+             * @default false
+             */
+            fertile: boolean;
+            /** Flow */
+            flow?: ("none" | "spotting" | "light" | "medium" | "heavy") | null;
+            /**
+             * Has Log
+             * @default false
+             */
+            has_log: boolean;
+            /**
+             * Predicted
+             * @default false
+             */
+            predicted: boolean;
+        };
+        /** CalendarMonthResponse */
+        CalendarMonthResponse: {
+            /** Days */
+            days: components["schemas"]["CalendarDay"][];
+            /** Month */
+            month: string;
         };
         /** Consent */
         Consent: {
@@ -3422,6 +3482,65 @@ export interface operations {
                 };
             };
             /** @description The request has invalid fields. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    get_calendar_month_api_v1_health_calendar_get: {
+        parameters: {
+            query?: {
+                /** @description Month in YYYY-MM format (defaults to current month in user's timezone) */
+                month?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarMonthResponse"];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation failure. */
             422: {
                 headers: {
                     [name: string]: unknown;
