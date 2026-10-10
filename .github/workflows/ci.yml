@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  verify-server:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: lifeos
+          POSTGRES_PASSWORD: lifeos
+          POSTGRES_DB: lifeos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        working-directory: server
+        run: uv sync
+
+      - name: Format check (Ruff)
+        working-directory: server
+        run: uv run ruff format --check .
+
+      - name: Lint check (Ruff)
+        working-directory: server
+        run: uv run ruff check .
+
+      - name: Type check (Mypy)
+        working-directory: server
+        run: uv run mypy --strict app
+
+      - name: Architecture contracts (import-linter)
+        working-directory: server
+        run: uv run lint-imports
+
+      - name: Dependency audit (pip-audit)
+        working-directory: server
+        run: uv run pip-audit
+
+      - name: Run server test suite (pytest)
+        working-directory: server
+        env:
+          DATABASE_URL: postgresql://lifeos:lifeos@localhost:5432/lifeos
+          ENV: local
+        run: uv run pytest -q --cov=app --cov-config=.coveragerc --cov-report=term
+
+  verify-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Format check (Prettier)
+        working-directory: web
+        run: npx --no-install prettier --check .
+
+      - name: Lint check (ESLint & Stylelint)
+        working-directory: web
+        run: |
+          npx --no-install eslint . --max-warnings 0
+          npx --no-install stylelint "src/**/*.css" --max-warnings 0
+
+      - name: Type check (TypeScript)
+        working-directory: web
+        run: npx --no-install tsc --noEmit
+
+      - name: Unit test suite (Vitest)
+        working-directory: web
+        run: npm run test:unit -- --run --coverage
+
+      - name: Production bundle & size limit
+        working-directory: web
+        run: npm run build && npx --no-install size-limit
+
+      - name: Check external origins (NFR-6)
+        run: ./scripts/check_external_origins.sh web/dist
+
+      - name: Dependency audit (npm audit)
+        working-directory: web
+        run: npm audit --audit-level=high
+
+  contracts-and-tokens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify design tokens
+        run: |
+          python3 scripts/build_tokens.py --check
+          python3 scripts/check_contrast.py
+          python3 scripts/build_icons.py --check
+
+      - name: Requirement traceability check
+        run: python3 scripts/trace.py
+
+      - name: Verify image scan script
+        run: ./scripts/scan_images.sh
