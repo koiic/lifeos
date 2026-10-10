@@ -1,0 +1,28 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--size-border) solid var(--border-strong);
+  border-radius: var(--radius-card);
+  background-color: var(--surface);
+}
+
+.title {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-label);
+}
+
+.intimacyRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.intimacyOptions {
+  display: flex;
+  gap: var(--space-2);
+}

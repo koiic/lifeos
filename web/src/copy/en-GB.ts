@@ -27,6 +27,102 @@ export const copy = {
     emptyBody:
       'Soon you can add a period, check-in, medicine, appointment, task or note from here.',
   },
+  checkin: {
+    title: 'Daily check-in',
+    titleForDate: (date: string) => `Check-in for ${date}`,
+    close: 'Close',
+    save: 'Save check-in',
+    saved: 'Check-in saved',
+    saving: 'Saving...',
+    mood: {
+      label: 'Mood',
+      bright: 'Bright',
+      good: 'Good',
+      okay: 'Okay',
+      tired: 'Tired',
+      low: 'Low',
+    },
+    energy: {
+      label: 'Energy',
+      lowest: 'Low',
+      highest: 'High',
+      outOfFive: (level: number) => `${String(level)} / 5`,
+      levelLabel: (level: number) => {
+        if (level === 1) return '1 - Low';
+        if (level === 5) return '5 - High';
+        return String(level);
+      },
+      levelText: (level: number) => String(level),
+    },
+    sleep: {
+      label: 'Sleep',
+      hours: (h: number) => `${h} hrs`,
+      notLogged: 'Not logged',
+      decrease: 'Decrease sleep by 30 minutes',
+      increase: 'Increase sleep by 30 minutes',
+      clear: 'Clear sleep',
+    },
+    flow: {
+      label: 'Flow',
+      none: 'None',
+      spotting: 'Spotting',
+      light: 'Light',
+      medium: 'Medium',
+      heavy: 'Heavy',
+    },
+    symptoms: {
+      label: 'Symptoms',
+      addCustom: 'Add symptom',
+      newTitle: 'New symptom',
+      nameLabel: 'Symptom name',
+      namePlaceholder: 'e.g. Brain fog',
+      categoryLabel: 'Category',
+      categories: {
+        pain: 'Pain',
+        digestion: 'Digestion',
+        skin: 'Skin',
+        emotional: 'Emotional',
+        energy: 'Energy',
+        other: 'Other',
+      },
+      create: 'Add',
+      cancel: 'Cancel',
+      nameRequired: 'Enter a symptom name',
+      failed: "Couldn't add symptom. Try again.",
+    },
+    note: {
+      label: 'Note',
+      placeholder: 'Any thoughts, notes or observations...',
+      charsRemaining: (remaining: number) => `${remaining} characters left`,
+    },
+    optional: {
+      title: 'Optional health tracking',
+      bbt: {
+        label: 'Basal body temperature',
+        labelWithUnit: (unit: string) => `Basal body temperature (${unit})`,
+        unitC: '°C',
+        unitF: '°F',
+      },
+      discharge: {
+        label: 'Cervical discharge',
+        placeholder: 'Select discharge type',
+        options: {
+          none: 'None',
+          dry: 'Dry',
+          sticky: 'Sticky',
+          creamy: 'Creamy',
+          eggwhite: 'Eggwhite',
+          watery: 'Watery',
+        },
+      },
+      intimacy: {
+        label: 'Sex & intimacy',
+        hadSex: 'Had sex today',
+        protected: 'Protected',
+        unprotected: 'Unprotected',
+      },
+    },
+  },
   today: {
     title: 'Today',
     greeting: {

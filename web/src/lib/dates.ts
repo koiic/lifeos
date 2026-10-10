@@ -18,6 +18,11 @@ export function formatTodayDate(iso: string, timeZone: string): string {
   return formatInTimeZone(iso, timeZone, 'EEEE d MMMM', { locale: enGB });
 }
 
+/** "2026-10-08" for an ISO timestamp, in `timeZone` (default: the device's). */
+export function formatIsoDate(iso: string, timeZone: string = deviceTimeZone()): string {
+  return formatInTimeZone(iso, timeZone, 'yyyy-MM-dd');
+}
+
 /** The current instant as an ISO string (features never use `Date` directly, plan 4.3). */
 export function nowIso(): string {
   return new Date().toISOString();

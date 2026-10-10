@@ -5,5 +5,7 @@ export { ApiError } from './client';
 export type { ApiPath, FieldError, Method } from './client';
 export type { components, paths } from './schema';
 export { reportClientError } from './clientErrors';
+export * from './dailyLogs';
+export * from './symptoms';
 
 export const api = { request: apiRequest };

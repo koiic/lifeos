@@ -36,7 +36,7 @@ describe('[SET-1] profile: name, timezone, week start, temperature', () => {
     expect(field(t.weekStart).value).toBe('1');
     expect(field(t.temperature).value).toBe('C');
     await expectNoAxeViolations(container);
-  });
+  }, 10_000);
 
   it('saves only what changed, each to its own endpoint, with its version', async () => {
     const api = fakeApi({

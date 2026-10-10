@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { cityOf, formatDateTime, formatTodayDate } from './dates';
+import { cityOf, formatDateTime, formatIsoDate, formatTodayDate } from './dates';
 
 describe('formatDateTime (UK English, 24-hour)', () => {
   it('formats in the given timezone, day month year and 24-hour time', () => {
@@ -37,5 +37,12 @@ describe('cityOf (the "You seem to be in Lagos" prompt, spec 11.7)', () => {
     ['UTC', 'UTC'],
   ])('%s → %s', (zone, city) => {
     expect(cityOf(zone)).toBe(city);
+  });
+});
+
+describe('formatIsoDate (YYYY-MM-DD)', () => {
+  it('formats timestamp to YYYY-MM-DD in the given timezone', () => {
+    expect(formatIsoDate('2026-10-08T13:05:00Z', 'Europe/London')).toBe('2026-10-08');
+    expect(formatIsoDate('2026-10-08T23:30:00Z', 'Africa/Lagos')).toBe('2026-10-09');
   });
 });

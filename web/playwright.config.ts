@@ -50,6 +50,8 @@ export default defineConfig({
       // DATABASE_URL (if set, e.g. CI) stays the base database; the script makes the e2e one.
       env: {
         APP_ORIGIN: STACK_ENV.APP_ORIGIN,
+        DATABASE_URL:
+          process.env.DATABASE_URL ?? 'postgresql://lifeos:lifeos@127.0.0.1:54320/lifeos',
         E2E_DATABASE_URL: STACK_ENV.DATABASE_URL,
         API_PORT: String(API_PORT),
       },

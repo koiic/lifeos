@@ -7,6 +7,7 @@ const ICONS = {
   close: [<path key="a" d="M6 6l12 12M18 6L6 18" />],
   check: [<path key="a" d="M5 12.5l4.5 4.5L19 7.5" />],
   plus: [<path key="a" d="M12 5v14M5 12h14" />],
+  minus: [<path key="a" d="M5 12h14" />],
   chevronDown: [<path key="a" d="M6 9l6 6 6-6" />],
   chevronLeft: [<path key="a" d="M15 6l-6 6 6 6" />],
   chevronRight: [<path key="a" d="M9 6l6 6-6 6" />],

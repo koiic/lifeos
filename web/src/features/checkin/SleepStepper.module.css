@@ -1,0 +1,88 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.label {
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-label);
+}
+
+.controls {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.stepButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-touch-target);
+  height: var(--size-touch-target);
+  padding: 0;
+  border: var(--size-border) solid var(--border-strong);
+  border-radius: var(--radius-button);
+  background-color: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-label);
+  cursor: pointer;
+  transition-property: background-color;
+  transition-duration: var(--motion-duration-fast);
+  transition-timing-function: var(--motion-ease-out);
+}
+
+.stepButton:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+}
+
+.stepButton:focus-visible {
+  outline: var(--size-focus-ring) solid var(--ink);
+  outline-offset: var(--size-focus-offset);
+}
+
+.display {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--size-touch-target);
+  padding: var(--space-2) var(--space-3);
+  border: var(--size-border) solid var(--border-strong);
+  border-radius: var(--radius-input);
+  background-color: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-body-strong);
+}
+
+.clearButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--size-touch-target);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  font-family: var(--font-body);
+  font-size: var(--font-size-caption);
+  cursor: pointer;
+}
+
+.clearButton:hover {
+  color: var(--ink);
+}

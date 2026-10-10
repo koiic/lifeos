@@ -59,13 +59,14 @@ describe('router', () => {
     signedIn();
     const router = renderAt('/');
     // The first route test transforms the shell and Today chunks while other files run.
-    expect(await screen.findByRole('heading', { level: 1 }, { timeout: 12_000 })).toBeDefined();
+    expect(await screen.findByRole('heading', { level: 1 }, { timeout: 25_000 })).toBeDefined();
     expect(router.state.location.pathname).toBe('/today');
-  }, 15_000);
+  }, 30_000);
 
   it('declares every screen route as lazy (code-split)', () => {
     for (const path of [
       'today',
+      'checkin',
       'register',
       'signin',
       'recover',

@@ -86,6 +86,14 @@ export const routes: RouteObject[] = [
                 },
               },
               {
+                path: 'checkin',
+                handle: handle('/checkin'),
+                lazy: async () => {
+                  const { CheckInScreen } = await import('../features/checkin/CheckInScreen');
+                  return { Component: CheckInScreen };
+                },
+              },
+              {
                 path: 'health',
                 handle: handle('/health'),
                 element: <Navigate to="/health/cycle" replace />,
