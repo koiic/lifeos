@@ -35,7 +35,7 @@ Spec version: 1 · Plan version: 1
 | --- | --- | --- | --- | --- | --- | --- |
 | T18 | Daily logs API with validation and last-writer-wins | CHK-2 | T09, T05 | done | 093f8a9c52aa | 24 tests pass; health coverage >90%; LWW, outbox event, and AES-256-GCM encryption verified |
 | T19 | Symptom catalogue API with custom symptoms | — | T09 | done | 90fd16041b0b | 13 tests pass; health coverage >90%; create, rename, archive, and old log resolution verified |
-| T20 | Period start/end endpoints and bleed-episode logic | PER-4, PER-5 | T18 | todo | | |
+| T20 | Period start/end endpoints and bleed-episode logic | PER-4, PER-5 | T18 | done | de44cca1224f | Pure-function bleed episode classification, auto-close, >10-day prompt, TV6/TV9/TV10 tests, /health/period/start and /health/period/end endpoints |
 | T21 | Calendar month endpoint | — | T20 | todo | | |
 | T22 | Check-in sheet UI: mood, energy, sleep, symptoms, flow, note, optional fields | CHK-1, CHK-3, CHK-4, PER-2 | T18, T19, T11 | todo | | |
 | T23 | Offline layer: IndexedDB outbox, encrypted query cache, sync engine, sync chip | CHK-5, TOD-7 | T22 | todo | | |
