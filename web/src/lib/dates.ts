@@ -32,3 +32,48 @@ export function nowIso(): string {
 export function cityOf(timeZone: string): string {
   return (timeZone.split('/').pop() ?? timeZone).replace(/_/g, ' ');
 }
+
+/** Step a month string "YYYY-MM" by delta months (CSC-3). */
+export function stepMonth(month: string, delta: number): string {
+  const [yearStr, monthStr] = month.split('-');
+  const year = parseInt(yearStr ?? '2026', 10);
+  const monthNum = parseInt(monthStr ?? '10', 10);
+  const date = new Date(Date.UTC(year, monthNum - 1 + delta, 1));
+  const nextYear = date.getUTCFullYear();
+  const nextMonthNum = date.getUTCMonth() + 1;
+  return `${String(nextYear)}-${String(nextMonthNum).padStart(2, '0')}`;
+}
+
+/** Format month header "October 2026" (CSC-3). */
+export function formatMonthHeader(month: string): string {
+  const [yearStr, monthStr] = month.split('-');
+  const year = parseInt(yearStr ?? '2026', 10);
+  const monthNum = parseInt(monthStr ?? '10', 10);
+  const date = new Date(Date.UTC(year, monthNum - 1, 1));
+  return formatInTimeZone(date, 'UTC', 'MMMM yyyy', { locale: enGB });
+}
+
+/** Get calendar grid info: number of days in month and starting weekday (Mon = 0 ... Sun = 6) (CSC-3). */
+export function getMonthGrid(month: string): { daysInMonth: number; startWeekday: number } {
+  const [yearStr, monthStr] = month.split('-');
+  const year = parseInt(yearStr ?? '2026', 10);
+  const monthNum = parseInt(monthStr ?? '10', 10);
+  const firstDay = new Date(Date.UTC(year, monthNum - 1, 1));
+  const lastDay = new Date(Date.UTC(year, monthNum, 0));
+  const startWeekday = (firstDay.getUTCDay() + 6) % 7;
+  return {
+    daysInMonth: lastDay.getUTCDate(),
+    startWeekday,
+  };
+}
+
+/** Format accessible button label for calendar day (CSC-3). */
+export function formatDayAriaLabel(dateIso: string, descriptions: string[] = []): string {
+  const [yearStr, monthStr, dayStr] = dateIso.split('-');
+  const year = parseInt(yearStr ?? '2026', 10);
+  const monthNum = parseInt(monthStr ?? '10', 10);
+  const day = parseInt(dayStr ?? '1', 10);
+  const date = new Date(Date.UTC(year, monthNum - 1, day));
+  const base = formatInTimeZone(date, 'UTC', 'd MMMM yyyy', { locale: enGB });
+  return descriptions.length > 0 ? `${base}, ${descriptions.join(', ')}` : base;
+}

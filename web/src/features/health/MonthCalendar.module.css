@@ -1,0 +1,163 @@
+.calendar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header h2 {
+  font-family: var(--font-fraunces);
+  font-size: var(--font-size-h2);
+  color: var(--ink);
+  margin: 0;
+}
+
+.navButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-touch-target);
+  height: var(--size-touch-target);
+  border-radius: var(--radius-button);
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.navButton:focus-visible {
+  outline: var(--size-focus-ring) solid var(--ink);
+  outline-offset: var(--size-focus-offset);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-1);
+}
+
+.weekday {
+  text-align: center;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-body-strong);
+  color: var(--ink-muted);
+  padding: var(--space-2) 0;
+}
+
+.emptyCell {
+  min-height: var(--size-touch-target);
+}
+
+.dayButton {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--size-touch-target);
+  min-width: 100%;
+  border-radius: var(--space-2);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  padding: var(--space-1);
+  font-size: var(--font-size-body);
+}
+
+.dayButton:focus-visible {
+  outline: var(--size-focus-ring) solid var(--ink);
+  outline-offset: var(--size-focus-offset);
+}
+
+.dayButton[data-today='true'] {
+  font-weight: var(--font-weight-label);
+}
+
+.dayButton[data-fertile='true'] {
+  background: var(--fertile);
+  opacity: var(--opacity-scrim);
+}
+
+.dayButton[data-predicted='true'] {
+  border: var(--size-border) dashed var(--accent);
+}
+
+.dayButton[data-period='true'] {
+  background: var(--surface-tint);
+}
+
+.dayButton[data-selected='true'] {
+  outline: var(--size-focus-ring) solid var(--ink);
+  outline-offset: calc(-1 * var(--size-focus-ring));
+}
+
+.periodBadge {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-chip);
+  background: var(--accent);
+}
+
+.logDot {
+  width: var(--space-1);
+  height: var(--space-1);
+  border-radius: var(--radius-chip);
+  background: var(--ink-muted);
+  margin-top: var(--space-1);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--surface-tint);
+  font-size: var(--font-size-caption);
+  color: var(--ink-muted);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.legendDotPeriod {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-chip);
+  background: var(--accent);
+}
+
+.legendDotPredicted {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-chip);
+  border: 1px dashed var(--accent);
+}
+
+.legendDotFertile {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-input);
+  background: var(--fertile);
+}
+
+.legendDotLog {
+  width: var(--space-1);
+  height: var(--space-1);
+  border-radius: var(--radius-chip);
+  background: var(--ink-muted);
+}

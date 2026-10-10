@@ -107,6 +107,15 @@ export const routes: RouteObject[] = [
                 },
               },
               {
+                path: 'health/calendar',
+                handle: handle('/health/calendar'),
+                lazy: async () => {
+                  const { CycleCalendarScreen } =
+                    await import('../features/health/CycleCalendarScreen');
+                  return { Component: CycleCalendarScreen };
+                },
+              },
+              {
                 path: 'calendar',
                 handle: handle('/calendar'),
                 lazy: async () => {

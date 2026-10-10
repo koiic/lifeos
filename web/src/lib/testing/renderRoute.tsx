@@ -5,7 +5,14 @@ import { render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { createMemoryRouter, RouterProvider, useLocation } from 'react-router-dom';
 
-const OTHER_ROUTES = ['/today', '/signin', '/register', '/settings/security', '/install'];
+const OTHER_ROUTES = [
+  '/today',
+  '/signin',
+  '/register',
+  '/settings/security',
+  '/install',
+  '/checkin',
+];
 
 function Arrived() {
   const location = useLocation();

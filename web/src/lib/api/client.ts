@@ -121,8 +121,21 @@ export async function apiRequest<P extends ApiPath, M extends Method>(
   body?: RequestBody<Operation<P, M>>,
   params: Record<string, string> = {},
   extraHeaders: Record<string, string> = {},
+  query?: Record<string, string | number | boolean | null | undefined>,
 ): Promise<SuccessBody<Operation<P, M>>> {
-  const url = fillPath(path, params);
+  let url = fillPath(path, params);
+  if (query) {
+    const searchParams = new URLSearchParams();
+    for (const [k, v] of Object.entries(query)) {
+      if (v !== undefined && v !== null) {
+        searchParams.set(k, String(v));
+      }
+    }
+    const qs = searchParams.toString();
+    if (qs) {
+      url += (url.includes('?') ? '&' : '?') + qs;
+    }
+  }
   const headers = new Headers({
     Accept: 'application/json, application/problem+json',
     // CSRF defence (spec 9.1): every request carries the client header; the browser adds Origin.

@@ -7,5 +7,6 @@ export type { components, paths } from './schema';
 export { reportClientError } from './clientErrors';
 export * from './dailyLogs';
 export * from './symptoms';
+export * from './health';
 
 export const api = { request: apiRequest };
