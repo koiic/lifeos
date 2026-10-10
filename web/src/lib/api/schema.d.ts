@@ -467,6 +467,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/daily-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Daily Logs
+         * @description Get daily logs in a date range (max 400 days).
+         */
+        get: operations["get_daily_logs_api_v1_daily_logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/daily-logs/{log_date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Daily Log
+         * @description Get daily log for a single date (CHK-2).
+         */
+        get: operations["get_daily_log_api_v1_daily_logs__log_date__get"];
+        /**
+         * Upsert Daily Log
+         * @description Upsert daily log for date (CHK-2). Last-writer-wins by client_updated_at.
+         */
+        put: operations["upsert_daily_log_api_v1_daily_logs__log_date__put"];
+        post?: never;
+        /**
+         * Delete Daily Log
+         * @description Delete daily log for date (CHK-2, PER-2). Emits flow_changed if active flow removed.
+         */
+        delete: operations["delete_daily_log_api_v1_daily_logs__log_date__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/healthz": {
         parameters: {
             query?: never;
@@ -662,6 +710,144 @@ export interface components {
             /** Version */
             version: string;
         };
+        /** DailyLog */
+        DailyLog: {
+            /** Bbt C */
+            bbt_c?: number | null;
+            /** Checkin Ms */
+            checkin_ms?: number | null;
+            /**
+             * Client Updated At
+             * Format: date-time
+             */
+            client_updated_at: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Discharge */
+            discharge?: string | null;
+            /** Energy */
+            energy?: number | null;
+            /**
+             * Flow
+             * @default none
+             * @enum {string}
+             */
+            flow: "none" | "spotting" | "light" | "medium" | "heavy";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            intimacy?: components["schemas"]["IntimacyPayload"] | null;
+            /** Mood */
+            mood?: number | null;
+            /** Note */
+            note?: string | null;
+            /** Sleep Hours */
+            sleep_hours?: number | null;
+            /** Symptom Ids */
+            symptom_ids?: string[];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** DailyLogPutIn */
+        DailyLogPutIn: {
+            /** Bbt C */
+            bbt_c?: number | null;
+            /** Checkin Ms */
+            checkin_ms?: number | null;
+            /**
+             * Client Updated At
+             * Format: date-time
+             */
+            client_updated_at: string;
+            /** Discharge */
+            discharge?: string | null;
+            /** Energy */
+            energy?: number | null;
+            /**
+             * Flow
+             * @default none
+             * @enum {string}
+             */
+            flow: "none" | "spotting" | "light" | "medium" | "heavy";
+            intimacy?: components["schemas"]["IntimacyPayload"] | null;
+            /** Mood */
+            mood?: number | null;
+            /** Note */
+            note?: string | null;
+            /** Sleep Hours */
+            sleep_hours?: number | null;
+            /** Symptom Ids */
+            symptom_ids?: string[];
+        };
+        /** DailyLogPutResponse */
+        DailyLogPutResponse: {
+            /** Bbt C */
+            bbt_c?: number | null;
+            /** Checkin Ms */
+            checkin_ms?: number | null;
+            /**
+             * Client Updated At
+             * Format: date-time
+             */
+            client_updated_at: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Discharge */
+            discharge?: string | null;
+            /** Energy */
+            energy?: number | null;
+            /**
+             * Flow
+             * @default none
+             * @enum {string}
+             */
+            flow: "none" | "spotting" | "light" | "medium" | "heavy";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            intimacy?: components["schemas"]["IntimacyPayload"] | null;
+            /** Mood */
+            mood?: number | null;
+            /** Note */
+            note?: string | null;
+            /**
+             * Rebuild
+             * @enum {string}
+             */
+            rebuild: "queued" | "not_needed";
+            /** Sleep Hours */
+            sleep_hours?: number | null;
+            /** Symptom Ids */
+            symptom_ids?: string[];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /** DayBeforeAt */
         DayBeforeAt: {
             /** Time */
@@ -680,6 +866,13 @@ export interface components {
             field: string;
             /** Message */
             message: string;
+        };
+        /** IntimacyPayload */
+        IntimacyPayload: {
+            /** Logged */
+            logged: boolean;
+            /** Protected */
+            protected?: boolean | null;
         };
         /** InviteCheck */
         InviteCheck: {
@@ -2762,6 +2955,290 @@ export interface operations {
                 };
             };
             /** @description Too many reports */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    get_daily_logs_api_v1_daily_logs_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyLog"][];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Invalid date range. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    get_daily_log_api_v1_daily_logs__log_date__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                log_date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyLog"];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Daily log not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request has invalid fields. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    upsert_daily_log_api_v1_daily_logs__log_date__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                log_date: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DailyLogPutIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyLogPutResponse"];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated. Or: Missing X-LifeOS-Client header or wrong Origin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request body is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation failure. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    delete_daily_log_api_v1_daily_logs__log_date__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                log_date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated. Or: Missing X-LifeOS-Client header or wrong Origin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Daily log not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request body is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request has invalid fields. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
             429: {
                 headers: {
                     [name: string]: unknown;
