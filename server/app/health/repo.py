@@ -498,3 +498,24 @@ async def insert_idempotency(
             "response_body_enc": response_body_enc,
         },
     )
+
+
+async def get_logged_dates(
+    tx: Transaction, user_id: uuid.UUID, up_to_date: date, limit: int = 400
+) -> set[date]:
+    sql = (
+        "SELECT date FROM daily_logs"
+        " WHERE user_id = :user_id AND date <= :up_to_date"
+        " ORDER BY date DESC LIMIT :limit"
+    )
+    rows = (
+        (
+            await tx.execute(
+                text(sql),
+                {"user_id": user_id, "up_to_date": up_to_date, "limit": limit},
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return set(rows)

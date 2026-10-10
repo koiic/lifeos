@@ -8,5 +8,6 @@ export { reportClientError } from './clientErrors';
 export * from './dailyLogs';
 export * from './symptoms';
 export * from './health';
+export * from './today';
 
 export const api = { request: apiRequest };

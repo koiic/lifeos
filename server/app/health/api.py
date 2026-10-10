@@ -24,6 +24,7 @@ from app.health.schemas import (
     Symptom,
     SymptomCreateIn,
     SymptomUpdateIn,
+    TodayResponse,
 )
 from app.health.service import (
     DailyLogService,
@@ -336,7 +337,38 @@ async def get_calendar_month(
         return error_response(err)
 
 
+# ---------------------------------------------------------------------------
+# Today Endpoint (TOD-3, TOD-5, spec 9.3)
+# ---------------------------------------------------------------------------
+
+today_router = APIRouter(prefix="/api/v1/today", tags=["today"])
+
+
+@today_router.get(
+    "",
+    responses=SIGNED_IN | {422: {"description": "Validation failure."}},
+    response_model=TodayResponse,
+)
+async def get_today(
+    session: SignedIn,
+    service: DailyLogs,
+    target_date: Annotated[
+        date | None,
+        Query(
+            alias="date",
+            description="Date in YYYY-MM-DD format (defaults to current date in user's timezone)",
+        ),
+    ] = None,
+) -> TodayResponse | JSONResponse:
+    """Aggregated Today payload: greeting, cycle card, check-in state, streak (TOD-3, TOD-5)."""
+    try:
+        return await service.get_today(session.user_id, target_date)
+    except HealthError as err:
+        return error_response(err)
+
+
 router.include_router(daily_logs_router)
 router.include_router(symptoms_router)
 router.include_router(period_router)
 router.include_router(health_router)
+router.include_router(today_router)

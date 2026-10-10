@@ -216,3 +216,33 @@ class CalendarDay(BaseModel):
 class CalendarMonthResponse(BaseModel):
     month: str
     days: list[CalendarDay]
+
+
+class CheckinState(BaseModel):
+    done: bool
+    log: DailyLog | None = None
+
+
+class CycleCard(BaseModel):
+    cycle_day: int | None = None
+    state: str | None = None
+    days_until: int | None = None
+    range_low: date | None = None
+    range_high: date | None = None
+    suppressed_reason: str | None = None
+
+
+class TodayItem(BaseModel):
+    type: str
+    id: str
+    title: str | None = None
+
+
+class TodayResponse(BaseModel):
+    date: date
+    greeting: Literal["morning", "afternoon", "evening", "night"]
+    cycle_card: CycleCard | None = None
+    checkin: CheckinState
+    streak: int
+    items: list[TodayItem] = Field(default_factory=list)
+    unread_inbox: int = 0

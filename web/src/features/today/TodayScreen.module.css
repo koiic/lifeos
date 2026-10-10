@@ -26,3 +26,10 @@
   outline: var(--surface-ink) solid var(--size-focus-ring);
   outline-offset: var(--size-focus-offset);
 }
+
+.headerRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}

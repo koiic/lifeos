@@ -118,6 +118,29 @@
         "title": "CalendarMonthResponse",
         "type": "object"
       },
+      "CheckinState": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          },
+          "log": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DailyLog"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "done"
+        ],
+        "title": "CheckinState",
+        "type": "object"
+      },
       "Consent": {
         "properties": {
           "current_version": {
@@ -168,6 +191,80 @@
           "version"
         ],
         "title": "ConsentIn",
+        "type": "object"
+      },
+      "CycleCard": {
+        "properties": {
+          "cycle_day": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Day"
+          },
+          "days_until": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Until"
+          },
+          "range_high": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range High"
+          },
+          "range_low": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range Low"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "suppressed_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppressed Reason"
+          }
+        },
+        "title": "CycleCard",
         "type": "object"
       },
       "DailyLog": {
@@ -2219,6 +2316,91 @@
           "delivered"
         ],
         "title": "TestPushResult",
+        "type": "object"
+      },
+      "TodayItem": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id"
+        ],
+        "title": "TodayItem",
+        "type": "object"
+      },
+      "TodayResponse": {
+        "properties": {
+          "checkin": {
+            "$ref": "#/components/schemas/CheckinState"
+          },
+          "cycle_card": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CycleCard"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "greeting": {
+            "enum": [
+              "morning",
+              "afternoon",
+              "evening",
+              "night"
+            ],
+            "title": "Greeting",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TodayItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "streak": {
+            "title": "Streak",
+            "type": "integer"
+          },
+          "unread_inbox": {
+            "default": 0,
+            "title": "Unread Inbox",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "date",
+          "greeting",
+          "checkin",
+          "streak"
+        ],
+        "title": "TodayResponse",
         "type": "object"
       },
       "TotpConfirm": {
@@ -5935,6 +6117,89 @@
         "summary": "Update Symptom",
         "tags": [
           "symptoms"
+        ]
+      }
+    },
+    "/api/v1/today": {
+      "get": {
+        "description": "Aggregated Today payload: greeting, cycle card, check-in state, streak (TOD-3, TOD-5).",
+        "operationId": "get_today_api_v1_today_get",
+        "parameters": [
+          {
+            "description": "Date in YYYY-MM-DD format (defaults to current date in user's timezone)",
+            "in": "query",
+            "name": "date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Date in YYYY-MM-DD format (defaults to current date in user's timezone)",
+              "title": "Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in, or the session has ended."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Account not activated."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Validation failure."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "More than 300 requests in a minute on this session (9.1)."
+          }
+        },
+        "summary": "Get Today",
+        "tags": [
+          "today"
         ]
       }
     }

@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { copy } from '../../copy/en-GB';
+import { useToday } from '../../lib/api';
 import { cityOf, formatTodayDate, nowIso } from '../../lib/dates';
 import { greetingFor } from '../../lib/greeting';
 import { type Me, useChangeProfile, useMe } from '../../lib/me/me';
@@ -11,6 +13,8 @@ import { ErrorState } from '../../ui/ErrorState';
 import { Icon } from '../../ui/icons';
 import { Skeleton } from '../../ui/Skeleton';
 import { Stack } from '../../ui/Stack';
+import { StreakBadge } from '../../ui/StreakBadge';
+import { CheckInCard } from './CheckInCard';
 import styles from './TodayScreen.module.css';
 
 const t = copy.today;
@@ -71,6 +75,8 @@ function TimezonePrompt({ me, onSwitched }: { me: Me; onSwitched: (city: string)
  */
 export function TodayScreen() {
   const me = useMe();
+  const todayQuery = useToday();
+  const navigate = useNavigate();
   const heading = useRef<HTMLHeadingElement>(null);
   const [status, setStatus] = useState<string | null>(null);
   const { pendingCount, syncNow } = useSync();
@@ -108,19 +114,31 @@ export function TodayScreen() {
         <h1 ref={heading} tabIndex={-1}>
           {t.greetingWithName(greeting, profile.display_name)}
         </h1>
-        {pendingCount > 0 && (
-          <button
-            type="button"
-            className={styles.syncChip}
-            onClick={() => void syncNow()}
-            aria-label={t.willSync}
-          >
-            <Icon name="more" size="sm" />
-            <span>{t.willSync}</span>
-          </button>
-        )}
+        <div className={styles.headerRow}>
+          {pendingCount > 0 && (
+            <button
+              type="button"
+              className={styles.syncChip}
+              onClick={() => void syncNow()}
+              aria-label={t.willSync}
+            >
+              <Icon name="more" size="sm" />
+              <span>{t.willSync}</span>
+            </button>
+          )}
+          {todayQuery.data && <StreakBadge days={todayQuery.data.streak} />}
+        </div>
       </Stack>
       <p role="status">{status}</p>
+      {todayQuery.data ? (
+        <CheckInCard
+          checkin={todayQuery.data.checkin}
+          onSelectMood={(mood) => navigate(`/checkin?mood=${mood}`)}
+          onOpenCheckIn={() => navigate('/checkin')}
+        />
+      ) : todayQuery.isPending ? (
+        <Skeleton label={copy.common.loading} shapes={['line', 'block']} />
+      ) : null}
       <TimezonePrompt me={me.data} onSwitched={(city) => setStatus(t.timezone.switched(city))} />
     </Stack>
   );

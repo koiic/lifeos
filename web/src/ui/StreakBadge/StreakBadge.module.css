@@ -1,0 +1,57 @@
+.badge {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  border-width: var(--size-border);
+  border-style: solid;
+  border-color: var(--border-strong);
+  border-radius: var(--radius-chip);
+  box-shadow: var(--shadow-sticker);
+  background-color: var(--sun);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-label);
+}
+
+.flame {
+  display: inline-block;
+}
+
+.wiggle {
+  animation-name: wiggle;
+  animation-duration: var(--motion-duration-ring);
+  animation-timing-function: var(--motion-ease-bounce);
+  animation-iteration-count: 1;
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  20% {
+    transform: rotate(-4deg);
+  }
+
+  40% {
+    transform: rotate(4deg);
+  }
+
+  60% {
+    transform: rotate(-3deg);
+  }
+
+  80% {
+    transform: rotate(3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wiggle {
+    animation-name: none;
+  }
+}

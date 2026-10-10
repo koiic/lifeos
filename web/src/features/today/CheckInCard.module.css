@@ -1,0 +1,147 @@
+.cardContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-label);
+  color: var(--ink);
+}
+
+.prompt {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--font-size-body);
+  color: var(--ink-muted);
+}
+
+.moodGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.moodButton {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: var(--size-touch-target);
+  min-height: var(--size-touch-target);
+  padding: var(--space-2) var(--space-3);
+  margin: 0;
+  border-width: var(--size-border);
+  border-style: solid;
+  border-color: var(--border-strong);
+  border-radius: var(--radius-button);
+  background-color: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-label);
+  cursor: pointer;
+  transition-property: background-color;
+  transition-duration: var(--motion-duration-fast);
+  transition-timing-function: var(--motion-ease-out);
+}
+
+.moodButton:focus-visible {
+  outline: var(--ink) solid var(--size-focus-ring);
+  outline-offset: var(--size-focus-offset);
+}
+
+.moodEmoji {
+  font-size: var(--font-size-h2);
+  line-height: var(--line-height-tight);
+}
+
+.moodLabel {
+  font-size: var(--font-size-caption);
+}
+
+.summaryList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.summaryChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-width: var(--size-border);
+  border-style: solid;
+  border-color: var(--border-strong);
+  border-radius: var(--radius-chip);
+  background-color: var(--surface-tint);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-body-strong);
+}
+
+.stickerDrop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-width: var(--size-border);
+  border-style: solid;
+  border-color: var(--border-strong);
+  border-radius: var(--radius-chip);
+  box-shadow: var(--shadow-sticker);
+  background-color: var(--fertile);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-label);
+  animation-name: drop-in;
+  animation-duration: var(--motion-duration-ring);
+  animation-timing-function: var(--motion-ease-bounce);
+  animation-iteration-count: 1;
+}
+
+@keyframes drop-in {
+  0% {
+    transform: scale(0.6) rotate(-6deg);
+    opacity: 0;
+  }
+
+  70% {
+    transform: scale(1.05) rotate(3deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stickerDrop {
+    animation-name: none;
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}

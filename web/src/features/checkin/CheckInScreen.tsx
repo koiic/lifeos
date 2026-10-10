@@ -18,6 +18,8 @@ export function CheckInScreen() {
 
   const timezone = me.data?.profile.timezone;
   const date = searchParams.get('date') ?? formatIsoDate(nowIso(), timezone);
+  const moodParam = searchParams.get('mood');
+  const initialMood = moodParam ? Number(moodParam) : undefined;
 
   const handleClose = () => {
     if (closingRef.current) return;
@@ -30,5 +32,13 @@ export function CheckInScreen() {
     }
   };
 
-  return <CheckInSheet open={open} date={date} onClose={handleClose} onSaved={handleClose} />;
+  return (
+    <CheckInSheet
+      open={open}
+      date={date}
+      initialMood={initialMood}
+      onClose={handleClose}
+      onSaved={handleClose}
+    />
+  );
 }

@@ -19,6 +19,7 @@ import { SymptomPicker } from './SymptomPicker';
 export interface CheckInSheetProps {
   open: boolean;
   date: string;
+  initialMood?: number | undefined;
   onClose: () => void;
   onSaved?: () => void;
 }
@@ -28,15 +29,23 @@ const MAX_NOTE_LENGTH = 2000;
 interface CheckInFormProps {
   date: string;
   initialLog: DailyLog | null;
+  initialMood?: number | undefined;
   settings?: Settings | undefined;
   onClose: () => void;
   onSaved?: (() => void) | undefined;
 }
 
-function CheckInForm({ date, initialLog, settings, onClose, onSaved }: CheckInFormProps) {
+function CheckInForm({
+  date,
+  initialLog,
+  initialMood,
+  settings,
+  onClose,
+  onSaved,
+}: CheckInFormProps) {
   const saveDailyLog = useSaveDailyLog();
 
-  const [mood, setMood] = useState<number | null>(initialLog?.mood ?? null);
+  const [mood, setMood] = useState<number | null>(initialLog?.mood ?? initialMood ?? null);
   const [energy, setEnergy] = useState<number | null>(initialLog?.energy ?? null);
   const [sleep, setSleep] = useState<number | null>(initialLog?.sleep_hours ?? null);
   const [flow, setFlow] = useState<FlowLevel>(initialLog?.flow ?? 'none');
@@ -156,11 +165,11 @@ function CheckInForm({ date, initialLog, settings, onClose, onSaved }: CheckInFo
  * Spec 4.4, 5.2, CHK-1, CHK-3, CHK-4, PER-2:
  * Check-in bottom sheet with mood, energy, sleep, flow, symptoms, note, optional fields.
  */
-export function CheckInSheet({ open, date, onClose, onSaved }: CheckInSheetProps) {
+export function CheckInSheet({ open, date, initialMood, onClose, onSaved }: CheckInSheetProps) {
   const me = useMe();
   const dailyLogQuery = useDailyLog(date);
 
-  const formKey = `${date}-${dailyLogQuery.data ? 1 : 0}`;
+  const formKey = `${date}-${dailyLogQuery.data ? 1 : 0}-${initialMood ?? 0}`;
 
   return (
     <Sheet open={open} title={copy.checkin.title} closeLabel={copy.checkin.close} onClose={onClose}>
@@ -171,6 +180,7 @@ export function CheckInSheet({ open, date, onClose, onSaved }: CheckInSheetProps
           key={formKey}
           date={date}
           initialLog={dailyLogQuery.data ?? null}
+          initialMood={initialMood}
           settings={me.data?.settings}
           onClose={onClose}
           onSaved={onSaved}

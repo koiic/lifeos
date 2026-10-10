@@ -11,6 +11,7 @@ from app.health import repo
 from app.health.schemas import (
     CalendarDay,
     CalendarMonthResponse,
+    CheckinState,
     DailyLog,
     DailyLogPayload,
     DailyLogPutIn,
@@ -23,7 +24,9 @@ from app.health.schemas import (
     SymptomCreateIn,
     SymptomPayload,
     SymptomUpdateIn,
+    TodayResponse,
 )
+from app.health.streak import compute_streak
 from app.platform.clock import utc_now
 from app.platform.crypto import (
     DataKey,
@@ -628,6 +631,61 @@ class DailyLogService:
                     )
 
             return CalendarMonthResponse(month=month_str, days=days)
+
+    async def get_today(
+        self, user_id: uuid.UUID, target_date_param: date | None = None
+    ) -> TodayResponse:
+        """Aggregated Today payload for date (spec 9.3, TOD-3, TOD-5)."""
+        async with user_transaction(self._db, user_id) as tx:
+            meta = await repo.user_meta(tx, user_id)
+            dek = unwrap_dek(self._keyring, meta.kek_version, meta.dek_wrapped, user_id)
+
+            local_now = datetime.now(ZoneInfo(meta.timezone))
+            today_local = local_now.date()
+
+            if target_date_param is not None:
+                if target_date_param > today_local:
+                    raise FutureDateError("Requested date cannot be in the future")
+                target_date = target_date_param
+                is_today = target_date == today_local
+            else:
+                target_date = today_local
+                is_today = True
+
+            # Daily log on target_date
+            row = await repo.get_daily_log(tx, user_id, target_date)
+            if row is not None:
+                associated = aad("daily_logs", "payload_enc", row.id, user_id)
+                payload = decrypt_payload(dek, row.payload_enc, associated, DailyLogPayload)
+                checkin = CheckinState(done=True, log=to_daily_log(row, payload))
+            else:
+                checkin = CheckinState(done=False, log=None)
+
+            # Streak calculation
+            logged_dates = await repo.get_logged_dates(tx, user_id, up_to_date=target_date)
+            streak = compute_streak(logged_dates, target_date, is_today=is_today)
+
+            # Greeting based on local hour
+            hour = local_now.hour
+            greeting: Literal["morning", "afternoon", "evening", "night"]
+            if 5 <= hour < 12:
+                greeting = "morning"
+            elif 12 <= hour < 17:
+                greeting = "afternoon"
+            elif 17 <= hour < 22:
+                greeting = "evening"
+            else:
+                greeting = "night"
+
+            return TodayResponse(
+                date=target_date,
+                greeting=greeting,
+                cycle_card=None,
+                checkin=checkin,
+                streak=streak,
+                items=[],
+                unread_inbox=0,
+            )
 
 
 class SymptomService:
