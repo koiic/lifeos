@@ -26,7 +26,7 @@ Spec version: 1 · Plan version: 1
 | T14 | Web Push end to end: VAPID, subscriptions, test push, permission card | ONB-3 | T05, T13 | done | fa91882 | make verify green (server 1245, web 389, cov 97.3%); verify-e2e 26 passed; 4 reviews closed; CR-027/028 approved; phone check moved to T15 |
 | T15 | Infrastructure: VPS, Docker Compose, Cloudflare Pages, Pages Function proxy, Tunnel, Access, secrets | — | T02, T13 | blocked |  | blocked: CR-006: stale Caddy and infra layout in spec |
 | T16 | CI/CD: pipelines, staging deploy, production approval, scans, external-origin check | NFR-6 | T15 | todo | | |
-| T17 | App shell: bottom navigation, Today greeting, profile and theme settings | SET-1, SET-2, TOD-1 | T12 | in_progress |  | blocked: CR-029: depends on T09 (do T09 first) |
+| T17 | App shell: bottom navigation, Today greeting, profile and theme settings | SET-1, SET-2, TOD-1 | T12 | done | f90f9ad | App shell, tabs, Today greeting, profile & theme settings; 442 web tests passed, size-limit 13.2 kB; SET-1, SET-2, TOD-1; CR-025, CR-029, CR-030 |
 | GATE-M1 | Milestone gate review (plan section 8) | — | all M1 tasks | todo | | |
 
 ## M2 Logging (weeks 3–4)
