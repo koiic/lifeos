@@ -2,7 +2,8 @@
 
 import hashlib
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+from typing import Literal
 from zoneinfo import ZoneInfo
 
 from app.health import repo
@@ -11,8 +12,10 @@ from app.health.schemas import (
     DailyLogPayload,
     DailyLogPutIn,
     DailyLogPutResponse,
+    FlowLevel,
     HealthProfilePayload,
     Mode,
+    PeriodActionResponse,
     Symptom,
     SymptomCreateIn,
     SymptomPayload,
@@ -401,6 +404,151 @@ class DailyLogService:
                     response_status=204,
                     response_body_enc=empty_enc,
                 )
+
+    async def start_period(
+        self,
+        user_id: uuid.UUID,
+        start_date: date,
+    ) -> PeriodActionResponse:
+        async with user_transaction(self._db, user_id) as tx:
+            dek, tz = await self._user_dek_and_tz(tx, user_id)
+            validate_log_date(start_date, tz)
+
+            existing = await repo.get_daily_log(tx, user_id, start_date)
+            now = utc_now()
+            rebuild: Literal["queued", "not_needed"] = "not_needed"
+            final_flow: FlowLevel = "medium"
+
+            if existing is None:
+                log_id = new_id()
+                payload = DailyLogPayload(flow="medium")
+                associated = aad("daily_logs", "payload_enc", log_id, user_id)
+                enc = encrypt_payload(dek, payload, associated)
+                await repo.insert_daily_log(
+                    tx,
+                    id=log_id,
+                    user_id=user_id,
+                    log_date=start_date,
+                    payload_enc=enc,
+                    client_updated_at=now,
+                )
+                rebuild = "queued"
+                await publish(
+                    tx,
+                    user_id,
+                    "daily_log.flow_changed",
+                    {"log_id": str(log_id), "date": str(start_date)},
+                )
+            else:
+                associated = aad("daily_logs", "payload_enc", existing.id, user_id)
+                payload = decrypt_payload(dek, existing.payload_enc, associated, DailyLogPayload)
+                prev_flow = payload.flow
+                if prev_flow in ("light", "medium", "heavy"):
+                    final_flow = prev_flow
+                    rebuild = "not_needed"
+                else:
+                    final_flow = "medium"
+                    updated_payload = payload.model_copy(update={"flow": "medium"})
+                    enc = encrypt_payload(dek, updated_payload, associated)
+                    await repo.update_daily_log(
+                        tx,
+                        id=existing.id,
+                        payload_enc=enc,
+                        client_updated_at=now,
+                    )
+                    rebuild = "queued"
+                    await publish(
+                        tx,
+                        user_id,
+                        "daily_log.flow_changed",
+                        {"log_id": str(existing.id), "date": str(start_date)},
+                    )
+
+            return PeriodActionResponse(date=start_date, flow=final_flow, rebuild=rebuild)
+
+    async def end_period(
+        self,
+        user_id: uuid.UUID,
+        last_flow_date: date,
+    ) -> PeriodActionResponse:
+        async with user_transaction(self._db, user_id) as tx:
+            dek, tz = await self._user_dek_and_tz(tx, user_id)
+            validate_log_date(last_flow_date, tz)
+
+            existing = await repo.get_daily_log(tx, user_id, last_flow_date)
+            now = utc_now()
+            final_flow: FlowLevel = "medium"
+            rebuild: Literal["queued", "not_needed"] = "not_needed"
+
+            if existing is None:
+                log_id = new_id()
+                payload = DailyLogPayload(flow="medium")
+                associated = aad("daily_logs", "payload_enc", log_id, user_id)
+                enc = encrypt_payload(dek, payload, associated)
+                await repo.insert_daily_log(
+                    tx,
+                    id=log_id,
+                    user_id=user_id,
+                    log_date=last_flow_date,
+                    payload_enc=enc,
+                    client_updated_at=now,
+                )
+                rebuild = "queued"
+                await publish(
+                    tx,
+                    user_id,
+                    "daily_log.flow_changed",
+                    {"log_id": str(log_id), "date": str(last_flow_date)},
+                )
+            else:
+                associated = aad("daily_logs", "payload_enc", existing.id, user_id)
+                payload = decrypt_payload(dek, existing.payload_enc, associated, DailyLogPayload)
+                final_flow = (
+                    payload.flow if payload.flow in ("light", "medium", "heavy") else "medium"
+                )
+                if payload.flow != final_flow:
+                    updated_payload = payload.model_copy(update={"flow": final_flow})
+                    enc = encrypt_payload(dek, updated_payload, associated)
+                    await repo.update_daily_log(
+                        tx,
+                        id=existing.id,
+                        payload_enc=enc,
+                        client_updated_at=now,
+                    )
+                    rebuild = "queued"
+                    await publish(
+                        tx,
+                        user_id,
+                        "daily_log.flow_changed",
+                        {"log_id": str(existing.id), "date": str(last_flow_date)},
+                    )
+
+            # Clear trailing flow days in the same episode (within 14 days after last_flow_date)
+            future_cutoff = last_flow_date + timedelta(days=14)
+            trailing_logs = await repo.get_daily_logs_range(
+                tx, user_id, last_flow_date + timedelta(days=1), future_cutoff
+            )
+            for row in trailing_logs:
+                row_associated = aad("daily_logs", "payload_enc", row.id, user_id)
+                row_payload = decrypt_payload(dek, row.payload_enc, row_associated, DailyLogPayload)
+                if row_payload.flow in ("light", "medium", "heavy", "spotting"):
+                    cleared_payload = row_payload.model_copy(update={"flow": "none"})
+                    cleared_enc = encrypt_payload(dek, cleared_payload, row_associated)
+                    await repo.update_daily_log(
+                        tx,
+                        id=row.id,
+                        payload_enc=cleared_enc,
+                        client_updated_at=now,
+                    )
+                    rebuild = "queued"
+                    await publish(
+                        tx,
+                        user_id,
+                        "daily_log.flow_changed",
+                        {"log_id": str(row.id), "date": str(row.date)},
+                    )
+
+            return PeriodActionResponse(date=last_flow_date, flow=final_flow, rebuild=rebuild)
 
 
 class SymptomService:

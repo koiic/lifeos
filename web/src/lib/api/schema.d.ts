@@ -515,6 +515,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/health/period/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * End Period
+         * @description Tapping 'Period ended' confirms last flow day (PER-1, PER-4).
+         */
+        post: operations["end_period_api_v1_health_period_end_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health/period/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Period
+         * @description Tapping 'Period started' sets flow Medium on that date's log (PER-1).
+         */
+        post: operations["start_period_api_v1_health_period_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/healthz": {
         parameters: {
             query?: never;
@@ -1076,6 +1116,40 @@ export interface components {
             password: string;
             /** Totp */
             totp: string;
+        };
+        /** PeriodActionResponse */
+        PeriodActionResponse: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /**
+             * Flow
+             * @enum {string}
+             */
+            flow: "none" | "spotting" | "light" | "medium" | "heavy";
+            /**
+             * Rebuild
+             * @enum {string}
+             */
+            rebuild: "queued" | "not_needed";
+        };
+        /** PeriodEndIn */
+        PeriodEndIn: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+        };
+        /** PeriodStartIn */
+        PeriodStartIn: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
         };
         /** PinUnlock */
         PinUnlock: {
@@ -3348,6 +3422,144 @@ export interface operations {
                 };
             };
             /** @description The request has invalid fields. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    end_period_api_v1_health_period_end_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PeriodEndIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodActionResponse"];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated. Or: Missing X-LifeOS-Client header or wrong Origin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request body is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation failure. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description More than 300 requests in a minute on this session (9.1). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    start_period_api_v1_health_period_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PeriodStartIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodActionResponse"];
+                };
+            };
+            /** @description Not signed in, or the session has ended. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Account not activated. Or: Missing X-LifeOS-Client header or wrong Origin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request body is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation failure. */
             422: {
                 headers: {
                     [name: string]: unknown;

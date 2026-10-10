@@ -17,6 +17,9 @@ from app.health.schemas import (
     DailyLog,
     DailyLogPutIn,
     DailyLogPutResponse,
+    PeriodActionResponse,
+    PeriodEndIn,
+    PeriodStartIn,
     Symptom,
     SymptomCreateIn,
     SymptomUpdateIn,
@@ -31,6 +34,7 @@ from app.platform.errors import problem_response
 router = APIRouter(dependencies=[Depends(no_store)])
 daily_logs_router = APIRouter(prefix="/api/v1/daily-logs", tags=["daily-logs"])
 symptoms_router = APIRouter(prefix="/api/v1/symptoms", tags=["symptoms"])
+period_router = APIRouter(prefix="/api/v1/health/period", tags=["health-period"])
 
 SignedIn = Annotated[SessionContext, Depends(require_session)]
 SIGNED_IN: dict[int | str, dict[str, Any]] = {
@@ -262,5 +266,45 @@ async def delete_symptom(
         return error_response(err)
 
 
+# ---------------------------------------------------------------------------
+# Period Start / End Endpoints (PER-1, PER-4, spec 9.2)
+# ---------------------------------------------------------------------------
+
+
+@period_router.post(
+    "/start",
+    responses=SIGNED_IN | {422: {"description": "Validation failure."}},
+    response_model=PeriodActionResponse,
+)
+async def start_period(
+    body: PeriodStartIn,
+    session: SignedIn,
+    service: DailyLogs,
+) -> PeriodActionResponse | JSONResponse:
+    """Tapping 'Period started' sets flow Medium on that date's log (PER-1)."""
+    try:
+        return await service.start_period(session.user_id, body.date)
+    except HealthError as err:
+        return error_response(err)
+
+
+@period_router.post(
+    "/end",
+    responses=SIGNED_IN | {422: {"description": "Validation failure."}},
+    response_model=PeriodActionResponse,
+)
+async def end_period(
+    body: PeriodEndIn,
+    session: SignedIn,
+    service: DailyLogs,
+) -> PeriodActionResponse | JSONResponse:
+    """Tapping 'Period ended' confirms last flow day (PER-1, PER-4)."""
+    try:
+        return await service.end_period(session.user_id, body.date)
+    except HealthError as err:
+        return error_response(err)
+
+
 router.include_router(daily_logs_router)
 router.include_router(symptoms_router)
+router.include_router(period_router)

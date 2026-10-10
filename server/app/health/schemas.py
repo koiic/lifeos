@@ -187,3 +187,17 @@ class DailyLog(BaseModel):
 
 class DailyLogPutResponse(DailyLog):
     rebuild: Literal["queued", "not_needed"]
+
+
+class PeriodStartIn(BaseModel):
+    date: date
+
+
+class PeriodEndIn(BaseModel):
+    date: date
+
+
+class PeriodActionResponse(BaseModel):
+    date: date
+    flow: FlowLevel
+    rebuild: Literal["queued", "not_needed"]
