@@ -150,3 +150,38 @@ export function useConfirmPeriodStart() {
     },
   });
 }
+
+export const HEALTH_PROFILE_KEY = ['health', 'profile'] as const;
+
+/**
+ * Fetch health profile: mode, usual lengths, hints (spec 9.2, SET-4, ONB-2).
+ */
+export function useHealthProfile() {
+  return useQuery({
+    queryKey: HEALTH_PROFILE_KEY,
+    queryFn: async (): Promise<HealthProfileResponse> => {
+      return (await api.request('GET', '/api/v1/health/profile')) as HealthProfileResponse;
+    },
+  });
+}
+
+/**
+ * Update health profile: mode, usual lengths, hints (spec 9.2, SET-4, ONB-2).
+ */
+export function useUpdateHealthProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: HealthProfileUpdateIn): Promise<HealthProfileResponse> => {
+      return (await api.request('PUT', '/api/v1/health/profile', payload)) as HealthProfileResponse;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: HEALTH_PROFILE_KEY });
+      queryClient.invalidateQueries({ queryKey: ['cycle'] });
+      queryClient.invalidateQueries({ queryKey: ['cycles'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar'] });
+      queryClient.invalidateQueries({ queryKey: ['today'] });
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+    },
+  });
+}

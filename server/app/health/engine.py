@@ -290,13 +290,6 @@ def confidence(n: int, sd: float) -> str:
 
 def predict(today: date, cycles: list[Cycle], profile: CycleEngineProfile) -> Prediction:
     """Deterministic prediction algorithm calendar-1.0 (spec 8.3, CYC-2)."""
-    if not cycles:
-        if profile.last_period_hint is None:
-            return Prediction(confidence="none", suppressed_reason="no_data")
-        last_start = profile.last_period_hint
-    else:
-        last_start = cycles[-1].start_date
-
     used = [c for c in cycles if c.is_complete and not c.excluded][-6:]
     n = len(used)
 
@@ -308,6 +301,13 @@ def predict(today: date, cycles: list[Cycle], profile: CycleEngineProfile) -> Pr
         ]
         if len(after) < 2:
             return Prediction(confidence="none", suppressed_reason="postpartum_waiting")
+
+    if not cycles:
+        if profile.last_period_hint is None:
+            return Prediction(confidence="none", suppressed_reason="no_data")
+        last_start = profile.last_period_hint
+    else:
+        last_start = cycles[-1].start_date
 
     if n == 0:
         if profile.usual_cycle_length is None:
@@ -406,6 +406,13 @@ def derive_state(
             has_long_gap=has_long_gap,
             phase="menstrual",
             message=f"Day {period_day} of your period",
+        )
+
+    if prediction is not None and prediction.suppressed_reason == "postpartum_waiting":
+        return DerivedState(
+            state="waiting",
+            cycle_day=cycle_day,
+            message="Waiting for your cycle to return",
         )
 
     if prediction is not None and prediction.suppressed_reason in ("no_data", "need_one_cycle"):

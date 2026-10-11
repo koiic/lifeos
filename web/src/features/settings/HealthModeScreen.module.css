@@ -1,0 +1,75 @@
+.modeList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: none;
+}
+
+.modeCard {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-card);
+  background-color: var(--surface);
+  cursor: pointer;
+}
+
+.modeCard[data-selected='true'] {
+  border-color: var(--accent);
+  background-color: var(--surface-tint);
+}
+
+.radioInput {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  align-self: center;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.modeLabel {
+  grid-column: 2;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--font-size-body);
+}
+
+.modeDescription {
+  grid-column: 2;
+  color: var(--ink-muted);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-body);
+}
+
+.startedOn {
+  font-size: var(--font-size-caption);
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+.postpartumCallout {
+  padding: var(--space-3);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-input);
+  background-color: var(--surface-tint);
+  color: var(--ink);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-body);
+}
+
+.feedbackSuccess {
+  color: var(--ink);
+  font-size: var(--font-size-caption);
+  font-weight: 500;
+}
+
+.feedbackError {
+  color: var(--danger);
+  font-size: var(--font-size-caption);
+}

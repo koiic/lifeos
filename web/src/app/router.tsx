@@ -165,6 +165,15 @@ export const routes: RouteObject[] = [
                 },
               },
               {
+                path: 'settings/mode',
+                handle: handle('/settings/mode'),
+                lazy: async () => {
+                  const { HealthModeScreen } =
+                    await import('../features/settings/HealthModeScreen');
+                  return { Component: HealthModeScreen };
+                },
+              },
+              {
                 path: 'settings/security',
                 handle: handle('/settings/security'),
                 lazy: async () => {
@@ -175,12 +184,30 @@ export const routes: RouteObject[] = [
             ],
           },
           {
+            path: 'setup',
+            handle: handle('/setup'),
+            lazy: async () => {
+              const { SetupWizardScreen } =
+                await import('../features/onboarding/SetupWizardScreen');
+              return { Component: SetupWizardScreen };
+            },
+          },
+          {
             path: 'setup/notifications',
             handle: handle('/setup/notifications'),
             lazy: async () => {
               const { NotificationsScreen } =
                 await import('../features/onboarding/NotificationsScreen');
               return { Component: NotificationsScreen };
+            },
+          },
+          {
+            path: 'setup/:step',
+            handle: handle('/setup/:step'),
+            lazy: async () => {
+              const { SetupWizardScreen } =
+                await import('../features/onboarding/SetupWizardScreen');
+              return { Component: SetupWizardScreen };
             },
           },
         ],

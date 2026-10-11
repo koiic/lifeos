@@ -506,6 +506,8 @@ export const copy = {
     theme: 'Theme',
     security: 'Security and sessions',
     notifications: 'Notifications',
+    healthMode: 'Health mode',
+    setupWizard: 'Setup wizard',
   },
   profile: {
     title: 'Profile',
@@ -604,6 +606,74 @@ export const copy = {
         oldStopWorking: 'Your old codes no longer work.',
       },
       failed: "That didn't work. Try again.",
+    },
+  },
+  healthMode: {
+    title: 'Health mode',
+    description: 'Choose how Life OS predicts and tracks your cycle.',
+    current: 'Current mode',
+    startedOn: (date: string) => `Started on ${date}`,
+    save: 'Save mode',
+    saved: 'Health mode updated.',
+    failed: "That didn't save. Try again.",
+    modes: {
+      standard: {
+        label: 'Standard cycle tracking',
+        description: 'Predicts your next period, fertile window, and cycle history.',
+      },
+      postpartum: {
+        label: 'Postpartum recovery',
+        description:
+          'Predictions are paused for 2 complete cycles while your cycle recovers. You can still log daily flow and symptoms normally.',
+      },
+      ttc: {
+        label: 'Trying to conceive',
+        description: 'Emphasises the fertile window and ovulation estimate to assist cycle timing.',
+      },
+      avoid: {
+        label: 'Avoiding pregnancy',
+        description: 'Cycle awareness. Please note that Life OS is not a contraceptive method.',
+      },
+    },
+    postpartumNote:
+      'Predictions will resume automatically after 2 complete cycles have been logged since this mode started.',
+  },
+  setup: {
+    title: 'Set up Life OS',
+    stepCount: (current: number, total: number) => `Step ${String(current)} of ${String(total)}`,
+    skip: 'Skip',
+    next: 'Next',
+    finish: 'Finish setup',
+    back: 'Back',
+    saved: 'Saved.',
+    failed: "That didn't save. Try again.",
+    step1: {
+      title: 'Choose your health mode',
+      description: 'You can change this at any time in Settings.',
+    },
+    step2: {
+      title: 'When did your last period start?',
+      description: 'This gives Life OS a starting point for your cycle predictions.',
+      dateLabel: 'Last period start date',
+      notYetPostpartum: "Haven't had a period yet since childbirth",
+      notSure: 'I don’t remember',
+    },
+    step3: {
+      title: 'Your typical cycle and period length',
+      description:
+        'If you are unsure, standard averages (28-day cycle, 5-day period) will be used.',
+      cycleLengthLabel: 'Usual cycle length (days)',
+      cycleLengthHint: 'From one period start to the next (e.g. 28)',
+      periodLengthLabel: 'Usual period length (days)',
+      periodLengthHint: 'Days of flow (e.g. 5)',
+      useDefaults: 'Use standard averages',
+    },
+    step4: {
+      title: 'Reminder preferences',
+      description: 'Choose your daily check-in time and whether you want period alerts.',
+      checkinTimeLabel: 'Daily check-in time',
+      periodDueLabel: 'Remind me when period is due',
+      periodDueHint: 'Alerts 2 days before your expected period',
     },
   },
 } as const;

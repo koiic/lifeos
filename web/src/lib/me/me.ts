@@ -103,3 +103,24 @@ export async function adoptDeviceTimezone(client: QueryClient): Promise<void> {
     // Offline or refused: nothing is lost; the prompt on Today covers it.
   }
 }
+
+/**
+ * 12.6, CR-030: explicit consent to health data, at the current version.
+ */
+export function useGiveConsent() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      body: { version: string } = { version: '1' },
+    ): Promise<components['schemas']['Consent']> => {
+      return (await api.request(
+        'POST',
+        '/api/v1/me/consent',
+        body,
+      )) as components['schemas']['Consent'];
+    },
+    onSuccess: (consent) => {
+      client.setQueryData<Me>(ME_KEY, (me) => (me === undefined ? me : { ...me, consent }));
+    },
+  });
+}

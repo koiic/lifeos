@@ -7,8 +7,10 @@ const t = copy.settingsHome;
 const ENTRIES = [
   { href: '/settings/profile', label: t.profile },
   { href: '/settings/theme', label: t.theme },
+  { href: '/settings/mode', label: t.healthMode },
   { href: '/settings/security', label: t.security },
   { href: '/setup/notifications', label: t.notifications },
+  { href: '/setup/1', label: t.setupWizard },
 ] as const;
 
 /** Spec 5.2 Settings (`/settings/*`); health mode, symptoms, optional fields, your data and

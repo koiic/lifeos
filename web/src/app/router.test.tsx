@@ -80,6 +80,9 @@ describe('router', () => {
       'settings',
       'settings/profile',
       'settings/theme',
+      'settings/mode',
+      'setup',
+      'setup/:step',
     ]) {
       expect(child(path)?.lazy, path).toBeTypeOf('function');
     }

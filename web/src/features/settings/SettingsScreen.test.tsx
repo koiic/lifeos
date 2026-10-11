@@ -10,8 +10,8 @@ const t = copy.settingsHome;
 
 afterEach(cleanup);
 
-describe('Settings (spec 5.2 /settings/*)', () => {
-  it('lists profile, theme, security and notifications', async () => {
+describe('Settings (spec 5.2 /settings/*, ONB-2, SET-4)', () => {
+  it('[ONB-2][SET-4] lists profile, theme, health mode, security, notifications, and setup wizard', async () => {
     const { container } = renderRoute(<SettingsScreen />, { path: '/settings', url: '/settings' });
     expect(screen.getByRole('heading', { level: 1, name: t.title })).toBeDefined();
     const links = screen
@@ -20,8 +20,10 @@ describe('Settings (spec 5.2 /settings/*)', () => {
     expect(links).toEqual([
       [t.profile, '/settings/profile'],
       [t.theme, '/settings/theme'],
+      [t.healthMode, '/settings/mode'],
       [t.security, '/settings/security'],
       [t.notifications, '/setup/notifications'],
+      [t.setupWizard, '/setup/1'],
     ]);
     await expectNoAxeViolations(container);
   });

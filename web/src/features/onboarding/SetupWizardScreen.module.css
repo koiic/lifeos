@@ -1,0 +1,128 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.progressContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.stepIndicator {
+  font-size: var(--font-size-caption);
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+
+.progressBar {
+  height: 4px;
+  background: var(--surface-tint);
+  border-radius: var(--radius-chip);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--accent);
+}
+
+.progressFill[data-step='1'] {
+  width: 25%;
+}
+
+.progressFill[data-step='2'] {
+  width: 50%;
+}
+
+.progressFill[data-step='3'] {
+  width: 75%;
+}
+
+.progressFill[data-step='4'] {
+  width: 100%;
+}
+
+.stepDescription {
+  font-size: var(--font-size-caption);
+  color: var(--ink-muted);
+  line-height: var(--line-height-body);
+}
+
+.modeList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: none;
+}
+
+.modeCard {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-card);
+  background-color: var(--surface);
+  cursor: pointer;
+}
+
+.modeCard[data-selected='true'] {
+  border-color: var(--accent);
+  background-color: var(--surface-tint);
+}
+
+.radioInput {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  align-self: center;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.modeLabel {
+  grid-column: 2;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--font-size-body);
+}
+
+.modeDesc {
+  grid-column: 2;
+  color: var(--ink-muted);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-body);
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  cursor: pointer;
+  font-size: var(--font-size-caption);
+  color: var(--ink);
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-strong);
+}
+
+.rightActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
