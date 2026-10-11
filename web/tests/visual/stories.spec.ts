@@ -27,6 +27,7 @@ test('every base component has at least one story', async ({ page }) => {
       'card',
       'chip',
       'codelist',
+      'cyclering',
       'datetimepicker',
       'dialog',
       'emptystate',

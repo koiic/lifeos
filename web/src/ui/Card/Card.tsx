@@ -9,6 +9,7 @@ export interface CardProps {
   tone?: 'surface' | 'accent' | 'fertile' | 'sun' | 'lilac' | 'butter';
   /** Sticker Book accent: outline and offset shadow (spec 5.3). */
   sticker?: boolean;
+  className?: string | undefined;
   children: ReactNode;
 }
 
@@ -18,11 +19,13 @@ export function Card({
   labelledBy,
   tone = 'surface',
   sticker = false,
+  className,
   children,
 }: CardProps) {
+  const classNames = className ? `${styles.card} ${className}` : styles.card;
   return (
     <Element
-      className={styles.card}
+      className={classNames}
       data-tone={tone}
       data-sticker={sticker}
       aria-labelledby={labelledBy}

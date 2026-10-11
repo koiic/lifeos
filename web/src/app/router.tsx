@@ -116,6 +116,15 @@ export const routes: RouteObject[] = [
                 },
               },
               {
+                path: 'health/history',
+                handle: handle('/health/history'),
+                lazy: async () => {
+                  const { CycleHistoryScreen } =
+                    await import('../features/health/CycleHistoryScreen');
+                  return { Component: CycleHistoryScreen };
+                },
+              },
+              {
                 path: 'calendar',
                 handle: handle('/calendar'),
                 lazy: async () => {

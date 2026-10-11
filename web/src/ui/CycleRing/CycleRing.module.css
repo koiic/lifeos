@@ -1,0 +1,85 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 280px;
+  height: 280px;
+}
+
+.svg {
+  display: block;
+  overflow: visible;
+}
+
+.track {
+  fill: none;
+  stroke: var(--surface-tint);
+}
+
+.periodArc {
+  fill: none;
+  stroke: var(--accent);
+}
+
+.fertileArc {
+  fill: none;
+  stroke: var(--fertile);
+}
+
+.todayMarker {
+  fill: var(--ink);
+  stroke: var(--surface);
+  stroke-width: 3px;
+}
+
+.centerContent {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+  max-width: 65%;
+}
+
+.dayNumber {
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.dayLabel {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+  margin-top: var(--space-1);
+}
+
+.phaseLabel {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+  margin-top: var(--space-1);
+}
+
+.placeholder {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.mini {
+  width: 56px;
+  height: 56px;
+}

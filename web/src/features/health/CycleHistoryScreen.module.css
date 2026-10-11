@@ -1,0 +1,118 @@
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.backLink:hover,
+.backLink:focus-visible {
+  text-decoration: underline;
+}
+
+.averagesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.statLabel {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.cycleCard {
+  border-radius: var(--radius-card);
+}
+
+.cycleCardExcluded {
+  opacity: var(--opacity-disabled);
+  background-color: var(--surface-tint) !important;
+}
+
+.cycleHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.cycleTitle {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dateRange {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+}
+
+.statsRow {
+  display: flex;
+  gap: var(--space-4);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.badgesRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.excludedBadge {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background-color: var(--danger);
+  color: var(--surface);
+  padding: calc(var(--space-1) / 2) var(--space-2);
+  border-radius: var(--radius-chip);
+}
+
+.reasonBadge {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.actionsRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-1);
+}

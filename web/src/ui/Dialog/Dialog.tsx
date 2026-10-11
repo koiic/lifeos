@@ -13,10 +13,19 @@ export interface DialogProps {
   onClose: () => void;
   /** The dialog's buttons. */
   actions: ReactNode;
+  children?: ReactNode;
 }
 
 /** Spec 5.5: a centred dialog with a focus trap; Escape closes; focus returns (5.8). */
-export function Dialog({ open, title, description, alert = false, onClose, actions }: DialogProps) {
+export function Dialog({
+  open,
+  title,
+  description,
+  alert = false,
+  onClose,
+  actions,
+  children,
+}: DialogProps) {
   const panel = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const descriptionId = useId();
@@ -47,6 +56,7 @@ export function Dialog({ open, title, description, alert = false, onClose, actio
             {description}
           </p>
         )}
+        {children}
         <div className={styles.actions}>{actions}</div>
       </div>
     </div>,

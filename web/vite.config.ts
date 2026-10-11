@@ -29,8 +29,8 @@ export default defineConfig({
       devOptions: { enabled: false },
     }),
   ],
-  server: { proxy: apiProxy },
-  preview: { proxy: apiProxy },
+  server: { host: true, proxy: apiProxy },
+  preview: { host: true, proxy: apiProxy },
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },

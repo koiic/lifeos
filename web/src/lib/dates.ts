@@ -77,3 +77,36 @@ export function formatDayAriaLabel(dateIso: string, descriptions: string[] = [])
   const base = formatInTimeZone(date, 'UTC', 'd MMMM yyyy', { locale: enGB });
   return descriptions.length > 0 ? `${base}, ${descriptions.join(', ')}` : base;
 }
+
+/** "8 Oct" for an ISO date YYYY-MM-DD. */
+export function formatDayMonth(dateIso: string): string {
+  const [yearStr, monthStr, dayStr] = dateIso.split('-');
+  const year = parseInt(yearStr ?? '2026', 10);
+  const monthNum = parseInt(monthStr ?? '10', 10);
+  const day = parseInt(dayStr ?? '1', 10);
+  const date = new Date(Date.UTC(year, monthNum - 1, day));
+  return formatInTimeZone(date, 'UTC', 'd MMM', { locale: enGB });
+}
+
+/** "8 Oct 2026" for an ISO date YYYY-MM-DD. */
+export function formatDayMonthYear(dateIso: string): string {
+  const [yearStr, monthStr, dayStr] = dateIso.split('-');
+  const year = parseInt(yearStr ?? '2026', 10);
+  const monthNum = parseInt(monthStr ?? '10', 10);
+  const day = parseInt(dayStr ?? '1', 10);
+  const date = new Date(Date.UTC(year, monthNum - 1, day));
+  return formatInTimeZone(date, 'UTC', 'd MMM yyyy', { locale: enGB });
+}
+
+/** Calculate the difference in calendar days between two ISO dates (b - a). */
+export function differenceInCalendarDays(startIso: string, endIso: string): number {
+  const [y1, m1, d1] = startIso.split('-');
+  const [y2, m2, d2] = endIso.split('-');
+  const dStart = new Date(
+    Date.UTC(parseInt(y1 ?? '2026', 10), parseInt(m1 ?? '10', 10) - 1, parseInt(d1 ?? '1', 10)),
+  );
+  const dEnd = new Date(
+    Date.UTC(parseInt(y2 ?? '2026', 10), parseInt(m2 ?? '10', 10) - 1, parseInt(d2 ?? '1', 10)),
+  );
+  return Math.round((dEnd.getTime() - dStart.getTime()) / 86400000);
+}

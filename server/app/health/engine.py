@@ -230,14 +230,14 @@ def build_cycles(
             length_days = None
             is_complete = False
 
-        # Determine exclusion rules (spec 8.2) for complete cycles
+        # Determine exclusion rules (spec 8.2)
         exclusion_reason: str | None = None
         is_user_excluded = start_date in profile.user_excluded_cycles
 
-        if is_complete and length_days is not None:
-            if is_user_excluded:
-                exclusion_reason = "user_excluded"
-            elif (
+        if is_user_excluded:
+            exclusion_reason = "user_excluded"
+        elif is_complete and length_days is not None:
+            if (
                 profile.mode == "postpartum"
                 and profile.mode_started_on is not None
                 and start_date < profile.mode_started_on
@@ -375,13 +375,6 @@ def derive_state(
             message="Waiting for your cycle to return",
         )
 
-    if prediction is not None and prediction.suppressed_reason in ("no_data", "need_one_cycle"):
-        return DerivedState(
-            state="no_data",
-            cycle_day=None,
-            message="Log your period to start predictions",
-        )
-
     latest_start = cycles[-1].start_date if cycles else profile.last_period_hint
     cycle_day = (today - latest_start).days + 1 if latest_start is not None else None
     has_long_gap = latest_start is not None and (today - latest_start).days > 90
@@ -393,7 +386,7 @@ def derive_state(
         (max(valid_lengths) - min(valid_lengths)) > 7 if len(valid_lengths) >= 2 else False
     )
 
-    # Check if currently on period
+    # Check if currently on period (spec 8.4: Today is within latest episode or flow logged today)
     is_on_period = False
     period_day: int | None = None
 
@@ -407,12 +400,19 @@ def derive_state(
     if is_on_period:
         return DerivedState(
             state="on_period",
-            cycle_day=cycle_day,
+            cycle_day=cycle_day or period_day,
             period_day=period_day,
             is_irregular=is_irregular,
             has_long_gap=has_long_gap,
             phase="menstrual",
             message=f"Day {period_day} of your period",
+        )
+
+    if prediction is not None and prediction.suppressed_reason in ("no_data", "need_one_cycle"):
+        return DerivedState(
+            state="no_data",
+            cycle_day=cycle_day,
+            message="Log your period to start predictions",
         )
 
     # Not on period: compute upcoming, window, or late

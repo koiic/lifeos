@@ -29,6 +29,7 @@ const signedIn = () =>
   fakeApi({
     [SESSIONS]: { body: { items: [], next_cursor: null } },
     'GET /api/v1/me': { body: meBody() },
+    'GET /api/v1/health/cycle': { body: { mode: 'standard', state: 'no_data' } },
   });
 
 function renderAt(url: string) {
