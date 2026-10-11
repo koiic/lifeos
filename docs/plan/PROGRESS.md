@@ -51,8 +51,8 @@ Spec version: 1 · Plan version: 1
 | T27 | Rebuild job, predictions storage, nightly predict, health profile, exclusions, new-period confirm | CYC-1, CYC-7 | T26, T05 | done | e01ba44 | 11 tests passing (rebuild, api, jobs); 94% coverage of app/health; make fmt-check lint types arch passed; trace passed |
 | T28 | Cycle screen: ring, prediction card, states, history, exclusions | CSC-1, CSC-2, CSC-4, CYC-3, CYC-4, CYC-5, CYC-6 | T27, T11 | done | 2ca9361 | 24 unit & journey tests passing; 10 stories in 2 themes; make fmt-check lint types arch clean; trace passed |
 | T29 | Setup wizard and health mode settings | MOD-1, MOD-2, ONB-2, SET-4 | T27 | done | c594f08 | Setup wizard 4 steps progressive save, skippable, rerun from settings, health mode switch with started_on date, postpartum 2-cycle suppression; unit, journey, and axe tests passing |
-| T30 | Reminder engine: model, horizon job, dispatcher, quiet hours, DST, retries, inbox API | REM-1, REM-2, REM-4, REM-6, REM-7 | T14, T27 | blocked |  | blocked: CR-007: truncated 9.2 cells (event scope, snooze presets) |
-| T31 | Check-in, period-due and late-period reminders | — | T30 | blocked |  | blocked: CR-008: late-period timing and cycle copy |
+| T30 | Reminder engine: model, horizon job, dispatcher, quiet hours, DST, retries, inbox API | REM-1, REM-2, REM-4, REM-6, REM-7 | T14, T27 | todo | | |
+| T31 | Check-in, period-due and late-period reminders | — | T30 | todo | | |
 | T32 | Notification settings, snooze and reminder inbox UI | REM-3, REM-5, SET-3 | T30, T17 | todo | | |
 | T33 | Today cycle card and complete /today aggregate for cycle | TOD-2 | T27, T25 | todo | | |
 | GATE-M3 | Milestone gate review (plan section 8) | — | all M3 tasks | todo | | |
